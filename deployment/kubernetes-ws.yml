@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: websocket-server
-  namespace: dad-group-10
+  namespace: dad-group-x
 spec:
   replicas: 1
   selector:
@@ -17,7 +17,7 @@ spec:
       priorityClassName: low-priority
       containers:
         - name: web
-          image: registry-172.22.21.115.sslip.io/dad-group-10/ws:v1.0.1
+          image: registry-172.22.21.115.sslip.io/dad-group-x/ws:v1.0.0
           resources:
             requests:
               memory: "128Mi"
@@ -31,7 +31,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: websocket-server
-  namespace: dad-group-10
+  namespace: dad-group-x
 spec:
   ports:
     - port: 3000
