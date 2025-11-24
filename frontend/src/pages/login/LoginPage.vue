@@ -68,12 +68,10 @@ const handleSubmit = async () => {
     toast.promise(authStore.login(formData.value), {
         loading: 'Calling API',
         success: (data) => {
+            router.push('/')
             return `Login Sucessfull - ${data?.name}`
         },
-        error: (data) => `[API] Error saving game - ${data?.response?.data?.message}`,
+        error: (data) => `[API] Login failed - ${data?.response?.data?.message || data?.message || 'Unknown error'}`,
     })
-
-
-    router.push('/')
 }
 </script>
