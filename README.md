@@ -35,7 +35,7 @@ brew install git
 
 ```bash
 git clone https://github.com/zee02/projeto-DAD.git
-cd projeto
+cd projeto-DAD
 ```
 
 ### Step 2: Make Sure Docker & Kubernetes Are Running
