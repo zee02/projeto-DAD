@@ -1,5 +1,5 @@
 import HomePage from '@/pages/home/HomePage.vue'
-import LoginPage from '@/pages/login/LoginPage.vue'
+import LoginPage from '@/pages/LoginPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
 import LaravelPage from '@/pages/testing/LaravelPage.vue'

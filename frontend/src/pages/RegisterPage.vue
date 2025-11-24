@@ -122,29 +122,12 @@ export default {
       this.isLoading = true
 
       try {
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(this.form),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || Object.values(data.errors || {})[0]?.[0] || 'Registration failed')
-        }
-
-        // Store token and user
         const authStore = useAuthStore()
-        authStore.setToken(data.token)
-        authStore.setUser(data.user)
-
+        await authStore.register(this.form)
         // Redirect to home
         this.$router.push('/')
       } catch (error) {
-        this.errorMessage = error.message
+        this.errorMessage = error.response?.data?.message || error.response?.data?.errors?.email?.[0] || error.message || 'Registration failed'
       } finally {
         this.isLoading = false
       }

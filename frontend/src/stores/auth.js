@@ -17,11 +17,24 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.id || user.value?.id
   })
 
+  const register = async (credentials) => {
+    const response = await apiStore.postRegister(credentials)
+    token.value = response.token
+    currentUser.value = response.user
+    user.value = response.user
+    localStorage.setItem('auth_token', response.token)
+    localStorage.setItem('auth_user', JSON.stringify(response.user))
+    return response.user
+  }
+
   const login = async (credentials) => {
-    await apiStore.postLogin(credentials)
-    const response = await apiStore.getAuthUser()
-    currentUser.value = response.data
-    return response.data
+    const response = await apiStore.postLogin(credentials)
+    token.value = response.token
+    currentUser.value = response.user
+    user.value = response.user
+    localStorage.setItem('auth_token', response.token)
+    localStorage.setItem('auth_user', JSON.stringify(response.user))
+    return response.user
   }
 
   const logout = async () => {
@@ -54,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isLoggedIn,
     currentUserID,
+    register,
     login,
     logout,
     setToken,
