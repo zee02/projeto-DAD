@@ -196,6 +196,44 @@ WebSocket service:
 http://ws-dad-group-10-172.22.21.253.sslip.io
 (ingress requires websocket upgrade)
 
+## 🏗️ Architecture Overview
+
+This project follows a distributed architecture with 3 independent services:
+
+### **1. Laravel API**
+- Handles authentication (Sanctum)
+- Exposes REST API endpoints
+- Persists data in SQLite
+
+### **2. Vue 3 Frontend**
+- SPA (Single Page Application) built with Vue Router
+- Calls the Laravel API for authentication & game operations
+- Connects to the WebSocket Server for real-time features
+
+### **3. WebSocket Server (Node.js)**
+- Receives WebSocket connections from the frontend
+- Broadcasts echo messages for real-time testing
+- Runs independently from the API
+
+All services are containerized using Docker and deployed on a shared Kubernetes cluster managed by the school (ESTG/IPLeiria).
+
+
+---
+
+## 📡 API Routes Summary
+
+| Method | Endpoint              | Description                      | Auth |
+|--------|------------------------|----------------------------------|------|
+| POST   | `/api/auth/login`     | Login and returns auth token     | ❌ No |
+| POST   | `/api/auth/logout`    | Logout (invalidate token)        | ✔️ Yes |
+| GET    | `/api/users/me`       | Returns authenticated user       | ✔️ Yes |
+| GET    | `/api/games`          | List all games                   | ✔️ Yes |
+| POST   | `/api/games`          | Create a new game                | ✔️ Yes |
+
+> Note: Authentication is handled by Laravel Sanctum.
+
+
+---
 ## 📚 What's Inside
 
 ```
@@ -243,5 +281,7 @@ kubectl get namespaces | grep dad-group-10
 - **Docker** - Containerization
 - **Kubernetes** - Orchestration
 - **Nginx** - Web Server
+
+
 
 Enjoy! 🎉
