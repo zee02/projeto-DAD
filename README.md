@@ -196,6 +196,8 @@ WebSocket service:
 http://ws-dad-group-10-172.22.21.253.sslip.io
 (ingress requires websocket upgrade)
 
+---
+
 ## 🏗️ Architecture Overview
 
 This project follows a distributed architecture with 3 independent services:
