@@ -56,7 +56,7 @@ kubectl cluster-info
 
 ```bash
 # Api(Laravel)
-docker build -f deployment/DockerfileLaravel --platform linux/amd64 \ -t registry-172.22.21.115.sslip.io/dad-group-10/api:v1.0.0 .
+docker build -f deployment/DockerfileLaravel --platform linux/amd64 -t registry-172.22.21.115.sslip.io/dad-group-10/api:v1.0.0 .
 
 # Vue
 docker build -f deployment/DockerfileVue --platform linux/amd64 \ -t registry-172.22.21.115.sslip.io/dad-group-10/web:v1.0.0 .
