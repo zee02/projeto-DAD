@@ -181,22 +181,6 @@ kubectl exec -n dad-group-10 $POD -- php artisan db:seed
 ```
 
 ---
-### Test 
-
-API testada no cluster:
-
-http://api-dad-group-10-172.22.21.253.sslip.io/api/games
-
-Frontend
-
-http://web-dad-group-10-172.22.21.253.sslip.io
-
-WebSocket service:
-
-http://ws-dad-group-10-172.22.21.253.sslip.io
-(ingress requires websocket upgrade)
-
----
 
 ## 🏗️ Architecture Overview
 
@@ -250,6 +234,22 @@ projeto/
 **Login Credentials** (auto-created):
 - Admin: `a1@mail.pt` / `123`
 - Player: `pa@mail.pt` / `123`
+
+---
+
+## 🧪 Test
+
+API testada no cluster:
+
+http://api-dad-group-10-172.22.21.253.sslip.io/api/games
+
+Frontend:
+
+http://web-dad-group-10-172.22.21.253.sslip.io
+
+WebSocket service:
+
+http://ws-dad-group-10-172.22.21.253.sslip.io (ingress requires websocket upgrade)
 
 ---
 
