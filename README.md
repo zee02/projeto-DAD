@@ -18,17 +18,17 @@ Before starting, make sure you have:
 3. **kubectl** - Install with your package manager or download from [kubernetes.io](https://kubernetes.io/docs/tasks/tools/)
 4. **Composer** - For Laravel (optional for local dev)
 5. **Node.js** - For npm (optional for local dev)
+6. **VPN** - Connected to our school network or use its VPN [VPN](https://intranet.ipleiria.pt/catalogo/entidades/DSI/categorias/bb2c9adf5f724c2e9322c800b17dca5d/servicos/e544e40fa845428e8e4ebc08d93cefa5)
 
-### Quick Install (macOS with Homebrew)
+### Quick Install (with Chocolatey)
 
 ```bash
-brew install docker
-brew install kubernetes-cli
-brew install git
-```
+choco install docker
+choco install kubernetes-cli
+choco install git
+``` 
 
 ---
-
 ## 🚀 Setup & Run (The Easy Way)
 
 ### Step 1: Clone the Project
@@ -40,24 +40,27 @@ cd projeto-DAD
 
 ### Step 2: Make Sure Docker & Kubernetes Are Running
 
+- Start Docker Desktop and wait for it to finish loading
+- Make sure you are connected to the schools network or its VPN
+- Check Kubernetes is running
+
 ```bash
-# Start Docker Desktop and wait for it to finish loading
-# Check Kubernetes is running
 kubectl cluster-info
 ```
 
 ### Step 3: Build Docker Images
 
+- Build all 3 images in `./projeto-DAD`
+
 ```bash
-# Build all 3 images
-docker build -f deployment/DockerfileLaravel --platform linux/amd64 \
-  -t registry-172.22.21.115.sslip.io/dad-group-10/api:v1.0.0 api/
+# Api(Laravel)
+docker build -f deployment/DockerfileLaravel --platform linux/amd64 \ -t registry-172.22.21.115.sslip.io/dad-group-10/api:v1.0.0 .
 
-docker build -f deployment/DockerfileVue --platform linux/amd64 \
-  -t registry-172.22.21.115.sslip.io/dad-group-10/web:v1.0.0 .
+# Vue
+docker build -f deployment/DockerfileVue --platform linux/amd64 \ -t registry-172.22.21.115.sslip.io/dad-group-10/web:v1.0.0 .
 
-docker build -f deployment/DockerfileWS --platform linux/amd64 \
-  -t registry-172.22.21.115.sslip.io/dad-group-10/ws:v1.0.0 websockets/
+# WebSockets
+docker build -f deployment/DockerfileWS --platform linux/amd64 \ -t registry-172.22.21.115.sslip.io/dad-group-10/ws:v1.0.0 .
 ```
 
 ### Step 4: Create Namespace
@@ -72,21 +75,20 @@ kubectl create namespace dad-group-10
 kubectl apply -f deployment/kubernetes-laravel.yml
 kubectl apply -f deployment/kubernetes-vue.yml
 kubectl apply -f deployment/kubernetes-ws.yml
+kubectl apply -f deployment/kubernetes-ingress.yml
 ```
 
 ### Step 6: Wait for Everything to Start
 
+- Watch the pods start (wait until all show "Running")
 ```bash
-# Watch the pods start (wait until all show "Running")
-kubectl get pods -n dad-group-10 -w
-
-# Press Ctrl+C when done
+kubectl get pods -n dad-group-10
 ```
 
 ### Step 7: Find Your App URL
 
+- Get your ingress IP
 ```bash
-# Get your ingress IP
 kubectl get ingress -n dad-group-10
 ```
 
