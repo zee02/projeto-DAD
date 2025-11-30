@@ -211,6 +211,7 @@
 <script>
 import { useAuthStore } from '@/stores/auth'
 import { useAPIStore } from '@/stores/api'
+import { getErrorMessage, getValidationErrors } from '@/utils/errorHandler'
 
 export default {
   name: 'ProfilePage',
@@ -237,6 +238,7 @@ export default {
       errorMessage: '',
       successMessage: '',
       showDeleteConfirmation: false,
+      errors: {},
     }
   },
   computed: {
@@ -267,6 +269,7 @@ export default {
     async updateProfile() {
       this.errorMessage = ''
       this.successMessage = ''
+      this.errors = {}
       this.isUpdating = true
 
       try {
@@ -279,7 +282,8 @@ export default {
         this.successMessage = 'Profile updated successfully!'
         setTimeout(() => (this.successMessage = ''), 3000)
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.message || 'Failed to update profile'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
       } finally {
         this.isUpdating = false
       }
@@ -293,6 +297,7 @@ export default {
 
       this.errorMessage = ''
       this.successMessage = ''
+      this.errors = {}
       this.isChangingPassword = true
 
       try {
@@ -316,7 +321,8 @@ export default {
           this.$router.push('/login')
         }, 2000)
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.message || 'Failed to change password'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
       } finally {
         this.isChangingPassword = false
       }
@@ -335,7 +341,8 @@ export default {
         authStore.logout()
         this.$router.push('/login')
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.message || 'Failed to delete account'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
         this.showDeleteConfirmation = false
       } finally {
         this.isDeleting = false

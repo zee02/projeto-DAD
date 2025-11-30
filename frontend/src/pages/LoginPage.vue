@@ -17,9 +17,13 @@
             v-model="form.email"
             type="email"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="your@email.com"
           />
+          <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email[0] }}</p>
         </div>
 
         <!-- Password -->
@@ -30,9 +34,13 @@
             v-model="form.password"
             type="password"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="••••••"
           />
+          <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password[0] }}</p>
         </div>
 
         <!-- Login Button -->
@@ -58,6 +66,7 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth'
+import { getErrorMessage, getValidationErrors } from '@/utils/errorHandler'
 
 export default {
   name: 'LoginPage',
@@ -69,11 +78,13 @@ export default {
       },
       isLoading: false,
       errorMessage: '',
+      errors: {},
     }
   },
   methods: {
     async handleLogin() {
       this.errorMessage = ''
+      this.errors = {}
       this.isLoading = true
 
       try {
@@ -82,7 +93,8 @@ export default {
         // Redirect to home
         this.$router.push('/')
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.response?.data?.errors?.email?.[0] || error.message || 'Login failed'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
       } finally {
         this.isLoading = false
       }
