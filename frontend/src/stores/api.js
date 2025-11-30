@@ -17,11 +17,18 @@ export const useAPIStore = defineStore('api', () => {
   })
 
   // AUTH
+  const postRegister = async (credentials) => {
+    const response = await axios.post(`${API_BASE_URL}/auth/register`, credentials)
+    return response.data
+  }
+  
   const postLogin = async (credentials) => {
     const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials)
     token.value = response.data.token
     axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+    return response.data
   }
+  
   const postLogout = async () => {
     await axios.post(`${API_BASE_URL}/auth/logout`)
     token.value = undefined
@@ -54,6 +61,7 @@ export const useAPIStore = defineStore('api', () => {
   }
 
   return {
+    postRegister,
     postLogin,
     postLogout,
     getAuthUser,
