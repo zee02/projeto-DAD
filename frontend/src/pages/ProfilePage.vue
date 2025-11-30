@@ -210,6 +210,7 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth'
+import { useAPIStore } from '@/stores/api'
 
 export default {
   name: 'ProfilePage',
@@ -269,27 +270,16 @@ export default {
       this.isUpdating = true
 
       try {
+        const apiStore = useAPIStore()
         const authStore = useAuthStore()
-        const response = await fetch('/api/user/profile', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authStore.token}`,
-          },
-          body: JSON.stringify(this.profileForm),
-        })
+        
+        const response = await apiStore.putUpdateProfile(this.profileForm)
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to update profile')
-        }
-
-        authStore.setUser(data.user)
+        authStore.setUser(response.user)
         this.successMessage = 'Profile updated successfully!'
         setTimeout(() => (this.successMessage = ''), 3000)
       } catch (error) {
-        this.errorMessage = error.message
+        this.errorMessage = error.response?.data?.message || error.message || 'Failed to update profile'
       } finally {
         this.isUpdating = false
       }
@@ -306,27 +296,16 @@ export default {
       this.isChangingPassword = true
 
       try {
+        const apiStore = useAPIStore()
         const authStore = useAuthStore()
-        const response = await fetch('/api/user/change-password', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authStore.token}`,
-          },
-          body: JSON.stringify({
-            current_password: this.passwordForm.current_password,
-            new_password: this.passwordForm.new_password,
-            new_password_confirmation: this.passwordForm.new_password_confirmation,
-          }),
+        
+        const response = await apiStore.postChangePassword({
+          current_password: this.passwordForm.current_password,
+          new_password: this.passwordForm.new_password,
+          new_password_confirmation: this.passwordForm.new_password_confirmation,
         })
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to change password')
-        }
-
-        this.successMessage = data.message
+        this.successMessage = response.message
         this.passwordForm = {
           current_password: '',
           new_password: '',
@@ -337,7 +316,7 @@ export default {
           this.$router.push('/login')
         }, 2000)
       } catch (error) {
-        this.errorMessage = error.message
+        this.errorMessage = error.response?.data?.message || error.message || 'Failed to change password'
       } finally {
         this.isChangingPassword = false
       }
@@ -348,28 +327,15 @@ export default {
       this.isDeleting = true
 
       try {
+        const apiStore = useAPIStore()
         const authStore = useAuthStore()
-        const response = await fetch('/api/user/account', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authStore.token}`,
-          },
-          body: JSON.stringify({
-            password: this.deleteForm.password,
-          }),
-        })
-
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.message || 'Failed to delete account')
-        }
+        
+        await apiStore.deleteAccount(this.deleteForm.password)
 
         authStore.logout()
         this.$router.push('/login')
       } catch (error) {
-        this.errorMessage = error.message
+        this.errorMessage = error.response?.data?.message || error.message || 'Failed to delete account'
         this.showDeleteConfirmation = false
       } finally {
         this.isDeleting = false

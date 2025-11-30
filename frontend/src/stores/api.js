@@ -40,6 +40,23 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/users/me`)
   }
 
+  const putUpdateProfile = async (profileData) => {
+    const response = await axios.put(`${API_BASE_URL}/user/profile`, profileData)
+    return response.data
+  }
+
+  const postChangePassword = async (passwordData) => {
+    const response = await axios.post(`${API_BASE_URL}/user/change-password`, passwordData)
+    return response.data
+  }
+
+  const deleteAccount = async (password) => {
+    const response = await axios.delete(`${API_BASE_URL}/user/account`, {
+      data: { password }
+    })
+    return response.data
+  }
+
   //Games
   const getGames = (resetPagination = false) => {
     if (resetPagination) {
@@ -65,6 +82,9 @@ export const useAPIStore = defineStore('api', () => {
     postLogin,
     postLogout,
     getAuthUser,
+    putUpdateProfile,
+    postChangePassword,
+    deleteAccount,
     getGames,
     gameQueryParameters,
   }
