@@ -54,12 +54,12 @@
       </form>
 
       <!-- Register Link -->
-      <p class="text-center text-gray-600 mt-6">
-        Don't have an account?
-        <router-link to="/register" class="text-blue-600 hover:text-blue-700 font-semibold">
-          Register here
+      <div class="mt-6 p-4 border border-gray-200 rounded-lg text-center">
+        <p class="text-gray-600">Don't have an account?</p>
+        <router-link to="/register" class="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+          Create Account
         </router-link>
-      </p>
+      </div>
     </div>
   </div>
 </template>
