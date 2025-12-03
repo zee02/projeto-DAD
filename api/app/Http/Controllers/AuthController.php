@@ -21,6 +21,7 @@ class AuthController extends Controller
             'password' => $request->password,
             'nickname' => $request->nickname,
             'type' => 'P', // Default type is Player
+            'coins_balance' => 10, // Sign-up bonus: 10 coins
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
