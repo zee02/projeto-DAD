@@ -14,9 +14,18 @@ class UpdateProfileRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'sometimes|string|max:255',
-            'nickname' => 'sometimes|string|max:255|unique:users,nickname,' . $this->user()->id,
-            'bio' => 'sometimes|string|max:1000',
+            'name' => 'sometimes|nullable|string|max:255',
+            'nickname' => 'sometimes|nullable|string|max:255|unique:users,nickname,' . $this->user()->id,
+            'bio' => 'sometimes|nullable|string|max:1000',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'nickname.unique' => 'This nickname is already taken.',
+            'nickname.string' => 'Nickname must be a string.',
+            'bio.string' => 'Bio must be a string.',
         ];
     }
 }

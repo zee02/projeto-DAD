@@ -396,11 +396,17 @@ export default {
         const apiStore = useAPIStore()
         const authStore = useAuthStore()
         
-        // Don't send photo_avatar_filename in profile update (it's handled by upload endpoint)
-        const dataToUpdate = {
-          name: this.profileForm.name,
-          nickname: this.profileForm.nickname,
-          bio: this.profileForm.bio,
+        // Build data object only with non-empty fields
+        const dataToUpdate = {}
+        
+        if (this.profileForm.name && this.profileForm.name.trim()) {
+          dataToUpdate.name = this.profileForm.name.trim()
+        }
+        if (this.profileForm.nickname && this.profileForm.nickname.trim()) {
+          dataToUpdate.nickname = this.profileForm.nickname.trim()
+        }
+        if (this.profileForm.bio && this.profileForm.bio.trim()) {
+          dataToUpdate.bio = this.profileForm.bio.trim()
         }
         
         const response = await apiStore.putUpdateProfile(dataToUpdate)
