@@ -7,7 +7,13 @@
         ({{ authStore.currentUser?.name }})
       </span>
     </div>
-    <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" />
+    <div class="flex items-center gap-6">
+      <div v-if="authStore.isLoggedIn" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg">
+        <span class="text-sm font-semibold text-yellow-800">🪙</span>
+        <span class="text-sm font-semibold text-yellow-900">{{ authStore.user?.coins_balance || 0 }} coins</span>
+      </div>
+      <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" />
+    </div>
   </nav>
   <div>
     <main class="container m-auto">

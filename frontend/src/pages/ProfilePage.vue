@@ -56,6 +56,11 @@
 
       <!-- Profile Info Tab -->
       <div v-if="activeTab === 'profile'" class="space-y-4">
+        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p class="text-sm text-yellow-800">Coins Balance</p>
+          <p class="text-2xl font-bold text-yellow-900">🪙 {{ user?.coins_balance || 0 }} coins</p>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
           <input
