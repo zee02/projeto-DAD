@@ -55,4 +55,17 @@ class User extends Authenticatable
             'coins_balance' => 'integer',
         ];
     }
+
+    /**
+     * Relationships
+     */
+    public function coinTransactions()
+    {
+        return $this->hasMany(CoinTransaction::class);
+    }
+
+    public function coinPurchases()
+    {
+        return $this->hasMany(CoinPurchase::class);
+    }
 }

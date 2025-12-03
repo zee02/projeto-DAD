@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CoinPurchaseController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -26,6 +27,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/avatar', [UserController::class, 'uploadAvatar']);
     Route::post('/user/change-password', [UserController::class, 'changePassword']);
     Route::delete('/user/account', [UserController::class, 'deleteAccount']);
+
+    // Coin purchase routes
+    Route::post('/coin-purchase/buy', [CoinPurchaseController::class, 'buy']);
+    Route::get('/coin-purchase/history', [CoinPurchaseController::class, 'history']);
 });
 
 Route::apiResource('games', GameController::class);
