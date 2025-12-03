@@ -22,6 +22,11 @@
                 </NavigationMenuItem>
                 <NavigationMenuItem v-else>
                     <NavigationMenuLink>
+                        <RouterLink to="/profile">Profile</RouterLink>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem v-if="userLoggedIn">
+                    <NavigationMenuLink>
                         <a @click.prevent="logoutClickHandler">Logout</a>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
