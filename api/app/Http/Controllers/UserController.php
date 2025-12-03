@@ -6,6 +6,7 @@ use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -21,6 +22,35 @@ class UserController extends Controller
         
         return response()->json([
             'message' => 'Profile updated successfully',
+            'user' => $user,
+        ]);
+    }
+
+    public function uploadAvatar(Request $request)
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:5120', // 5MB
+        ]);
+
+        $user = $request->user();
+        $file = $request->file('photo');
+
+        // Delete old avatar if exists
+        if ($user->photo_avatar_filename && Storage::disk('public')->exists('avatars/' . $user->photo_avatar_filename)) {
+            Storage::disk('public')->delete('avatars/' . $user->photo_avatar_filename);
+        }
+
+        // Store new avatar
+        $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs('avatars', $filename, 'public');
+
+        // Update user
+        $user->update(['photo_avatar_filename' => $filename]);
+
+        return response()->json([
+            'message' => 'Avatar uploaded successfully',
+            'photo_avatar_filename' => $filename,
+            'photo_avatar_url' => asset('storage/avatars/' . $filename),
             'user' => $user,
         ]);
     }

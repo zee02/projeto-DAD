@@ -40,6 +40,45 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/users/me`)
   }
 
+  const putUpdateProfile = async (profileData) => {
+    const response = await axios.put(`${API_BASE_URL}/user/profile`, profileData)
+    return response.data
+  }
+
+  const postChangePassword = async (passwordData) => {
+    const response = await axios.post(`${API_BASE_URL}/user/change-password`, passwordData)
+    return response.data
+  }
+
+  const deleteAccount = async (password) => {
+    const response = await axios.delete(`${API_BASE_URL}/user/account`, {
+      data: { password }
+    })
+    return response.data
+  }
+
+  const postUploadAvatar = async (file) => {
+    const formData = new FormData()
+    formData.append('photo', file)
+    const response = await axios.post(`${API_BASE_URL}/user/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  }
+
+  // Coin Shop
+  const postBuyCoin = async (purchaseData) => {
+    const response = await axios.post(`${API_BASE_URL}/coin-purchase/buy`, purchaseData)
+    return response.data
+  }
+
+  const getCoinPurchaseHistory = async () => {
+    const response = await axios.get(`${API_BASE_URL}/coin-purchase/history`)
+    return response.data
+  }
+
   //Games
   const getGames = (resetPagination = false) => {
     if (resetPagination) {
@@ -65,6 +104,12 @@ export const useAPIStore = defineStore('api', () => {
     postLogin,
     postLogout,
     getAuthUser,
+    putUpdateProfile,
+    postChangePassword,
+    deleteAccount,
+    postUploadAvatar,
+    postBuyCoin,
+    getCoinPurchaseHistory,
     getGames,
     gameQueryParameters,
   }

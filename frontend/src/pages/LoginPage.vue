@@ -17,9 +17,13 @@
             v-model="form.email"
             type="email"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="your@email.com"
           />
+          <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email[0] }}</p>
         </div>
 
         <!-- Password -->
@@ -30,9 +34,13 @@
             v-model="form.password"
             type="password"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="••••••"
           />
+          <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password[0] }}</p>
         </div>
 
         <!-- Login Button -->
@@ -46,18 +54,19 @@
       </form>
 
       <!-- Register Link -->
-      <p class="text-center text-gray-600 mt-6">
-        Don't have an account?
-        <router-link to="/register" class="text-blue-600 hover:text-blue-700 font-semibold">
-          Register here
+      <div class="mt-6 p-4 border border-gray-200 rounded-lg text-center">
+        <p class="text-gray-600">Don't have an account?</p>
+        <router-link to="/register" class="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+          Create Account
         </router-link>
-      </p>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
 import { useAuthStore } from '@/stores/auth'
+import { getErrorMessage, getValidationErrors } from '@/utils/errorHandler'
 
 export default {
   name: 'LoginPage',
@@ -69,11 +78,13 @@ export default {
       },
       isLoading: false,
       errorMessage: '',
+      errors: {},
     }
   },
   methods: {
     async handleLogin() {
       this.errorMessage = ''
+      this.errors = {}
       this.isLoading = true
 
       try {
@@ -82,7 +93,8 @@ export default {
         // Redirect to home
         this.$router.push('/')
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.response?.data?.errors?.email?.[0] || error.message || 'Login failed'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
       } finally {
         this.isLoading = false
       }

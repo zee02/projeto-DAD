@@ -17,9 +17,13 @@
             v-model="form.name"
             type="text"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.name ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="John Doe"
           />
+          <p v-if="errors.name" class="text-xs text-red-600 mt-1">{{ errors.name[0] }}</p>
         </div>
 
         <!-- Email -->
@@ -30,9 +34,13 @@
             v-model="form.email"
             type="email"
             required
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="your@email.com"
           />
+          <p v-if="errors.email" class="text-xs text-red-600 mt-1">{{ errors.email[0] }}</p>
         </div>
 
         <!-- Nickname (Optional) -->
@@ -43,9 +51,13 @@
             v-model="form.nickname"
             type="text"
             maxlength="20"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.nickname ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="MyNickname"
           />
+          <p v-if="errors.nickname" class="text-xs text-red-600 mt-1">{{ errors.nickname[0] }}</p>
         </div>
 
         <!-- Password -->
@@ -57,10 +69,14 @@
             type="password"
             required
             minlength="6"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="••••••"
           />
           <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+          <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password[0] }}</p>
         </div>
 
         <!-- Password Confirmation -->
@@ -72,9 +88,13 @@
             type="password"
             required
             minlength="6"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            :class="[
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              errors.password_confirmation ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            ]"
             placeholder="••••••"
           />
+          <p v-if="errors.password_confirmation" class="text-xs text-red-600 mt-1">{{ errors.password_confirmation[0] }}</p>
         </div>
 
         <!-- Register Button -->
@@ -100,6 +120,7 @@
 
 <script>
 import { useAuthStore } from '@/stores/auth'
+import { getErrorMessage, getValidationErrors } from '@/utils/errorHandler'
 
 export default {
   name: 'RegisterPage',
@@ -114,11 +135,13 @@ export default {
       },
       isLoading: false,
       errorMessage: '',
+      errors: {},
     }
   },
   methods: {
     async handleRegister() {
       this.errorMessage = ''
+      this.errors = {}
       this.isLoading = true
 
       try {
@@ -127,7 +150,8 @@ export default {
         // Redirect to home
         this.$router.push('/')
       } catch (error) {
-        this.errorMessage = error.response?.data?.message || error.response?.data?.errors?.email?.[0] || error.message || 'Registration failed'
+        this.errors = getValidationErrors(error)
+        this.errorMessage = getErrorMessage(error)
       } finally {
         this.isLoading = false
       }
