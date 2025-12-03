@@ -462,6 +462,7 @@ export default {
 
     async deleteAccount() {
       this.errorMessage = ''
+      this.successMessage = ''
       this.isDeleting = true
 
       try {
@@ -470,8 +471,14 @@ export default {
         
         await apiStore.deleteAccount(this.deleteForm.password)
 
-        authStore.logout()
-        this.$router.push('/login')
+        // Show success message before logout
+        this.successMessage = 'Account deleted successfully. Your account is now deactivated. Redirecting...'
+        this.showDeleteConfirmation = false
+        
+        setTimeout(() => {
+          authStore.logout()
+          this.$router.push('/login')
+        }, 3000)
       } catch (error) {
         this.errors = getValidationErrors(error)
         this.errorMessage = getErrorMessage(error)

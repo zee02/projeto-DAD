@@ -15,9 +15,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'name' => 'sometimes|string|max:255',
-            'nickname' => 'sometimes|string|max:255',
+            'nickname' => 'sometimes|string|max:255|unique:users,nickname,' . $this->user()->id,
             'bio' => 'sometimes|string|max:1000',
-            'photo_avatar_filename' => 'sometimes|string|max:255',
         ];
     }
 }
