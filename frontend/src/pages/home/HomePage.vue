@@ -75,15 +75,6 @@ const goToAdmin = () => {
 
       <CardContent class="space-y-6">
 
-        <!-- COINS DISPLAY -->
-        <div class="space-y-2 text-center">
-          <div class="text-lg font-semibold">
-            Coins: <span class="text-purple-600 font-bold">{{ coins }}</span>
-          </div>
-          <Button variant="secondary" @click="goToCoins">
-            Comprar Moedas
-          </Button>
-        </div>
 
         <!-- SINGLEPLAYER -->
         <div class="space-y-2">
