@@ -57,6 +57,17 @@ export const useAPIStore = defineStore('api', () => {
     return response.data
   }
 
+  const postUploadAvatar = async (file) => {
+    const formData = new FormData()
+    formData.append('photo', file)
+    const response = await axios.post(`${API_BASE_URL}/user/avatar`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  }
+
   //Games
   const getGames = (resetPagination = false) => {
     if (resetPagination) {
@@ -85,6 +96,7 @@ export const useAPIStore = defineStore('api', () => {
     putUpdateProfile,
     postChangePassword,
     deleteAccount,
+    postUploadAvatar,
     getGames,
     gameQueryParameters,
   }

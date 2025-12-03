@@ -56,6 +56,21 @@
 
       <!-- Profile Info Tab -->
       <div v-if="activeTab === 'profile'" class="space-y-4">
+        <!-- User Header Card -->
+        <div class="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg text-center">
+          <div class="flex justify-center mb-4">
+            <div class="w-32 h-32 rounded-full border-4 border-blue-300 bg-white flex items-center justify-center overflow-hidden">
+              <img 
+                v-if="avatarPreview || user?.photo_avatar_filename"
+                :src="avatarPreview || getAvatarUrl(user?.photo_avatar_filename)" 
+                :alt="user?.nickname"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="text-6xl">👤</div>
+            </div>
+          </div>
+        </div>
+
         <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p class="text-sm text-yellow-800">Coins Balance</p>
           <p class="text-2xl font-bold text-yellow-900">🪙 {{ user?.coins_balance || 0 }} coins</p>
@@ -93,13 +108,42 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Avatar Filename</label>
-          <input
-            v-model="profileForm.photo_avatar_filename"
-            type="text"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            placeholder="avatar.jpg"
-          />
+          <label class="block text-sm font-medium text-gray-700 mb-3">Avatar</label>
+          <div class="flex items-center gap-4">
+            <!-- Avatar Preview -->
+            <div 
+              @click="$refs.avatarInput.click()"
+              class="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition"
+            >
+              <img 
+                v-if="avatarPreview"
+                :src="avatarPreview" 
+                :alt="profileForm.photo_avatar_filename"
+                class="w-full h-full object-cover rounded-lg"
+              />
+              <div v-else class="text-center">
+                <p class="text-2xl mb-1">📷</p>
+                <p class="text-xs text-gray-500">Click to upload</p>
+              </div>
+            </div>
+            <!-- Hidden File Input -->
+            <input
+              ref="avatarInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="handleAvatarUpload"
+            />
+            <!-- File Info -->
+            <div class="flex-1">
+              <p v-if="profileForm.photo_avatar_filename" class="text-sm text-gray-700">
+                <strong>Current:</strong> {{ profileForm.photo_avatar_filename }}
+              </p>
+              <p class="text-xs text-gray-500 mt-2">
+                Click the image to select a new avatar (JPG, PNG, GIF)
+              </p>
+            </div>
+          </div>
         </div>
 
         <button
@@ -244,12 +288,21 @@ export default {
       successMessage: '',
       showDeleteConfirmation: false,
       errors: {},
+      avatarPreview: null,
     }
   },
   computed: {
     user() {
       const authStore = useAuthStore()
       return authStore.user
+    },
+  },
+  watch: {
+    activeTab(newTab) {
+      // Reload profile data when switching to profile tab
+      if (newTab === 'profile') {
+        this.loadProfile()
+      }
     },
   },
   mounted() {
@@ -269,7 +322,69 @@ export default {
           bio: this.user.bio || '',
           photo_avatar_filename: this.user.photo_avatar_filename || '',
         }
+        // Load avatar from storage (BD)
+        if (this.user.photo_avatar_filename) {
+          this.avatarPreview = this.getAvatarUrl(this.user.photo_avatar_filename)
+        } else {
+          // No avatar saved, check localStorage for unsaved preview
+          const savedPreview = localStorage.getItem('avatarPreview')
+          if (savedPreview) {
+            this.avatarPreview = savedPreview
+          } else {
+            this.avatarPreview = null
+          }
+        }
       }
+    },
+    handleAvatarUpload(event) {
+      const file = event.target.files[0]
+      if (!file) return
+
+      // Show preview immediately
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        this.avatarPreview = e.target.result
+        // Save to localStorage to persist across page reloads during upload
+        localStorage.setItem('avatarPreview', e.target.result)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload to server immediately
+      this.uploadAvatarToServer(file)
+    },
+
+    async uploadAvatarToServer(file) {
+      this.errorMessage = ''
+      this.successMessage = ''
+
+      try {
+        const apiStore = useAPIStore()
+        const authStore = useAuthStore()
+        
+        const response = await apiStore.postUploadAvatar(file)
+        
+        // Update user with the response from server
+        authStore.setUser(response.user)
+        this.profileForm.photo_avatar_filename = response.photo_avatar_filename
+        
+        // Update avatar preview with the storage URL
+        this.avatarPreview = response.photo_avatar_url
+        
+        // Clear localStorage since upload succeeded
+        localStorage.removeItem('avatarPreview')
+        
+        this.successMessage = 'Avatar uploaded successfully!'
+        setTimeout(() => (this.successMessage = ''), 3000)
+      } catch (error) {
+        this.errorMessage = getErrorMessage(error)
+        // Keep localStorage preview since upload failed - user can try again
+        console.error('Avatar upload failed:', error)
+      }
+    },
+    getAvatarUrl(filename) {
+      // Return the actual storage URL
+      if (!filename) return null
+      return `http://127.0.0.1:8000/storage/avatars/${filename}`
     },
     async updateProfile() {
       this.errorMessage = ''
@@ -281,10 +396,22 @@ export default {
         const apiStore = useAPIStore()
         const authStore = useAuthStore()
         
-        const response = await apiStore.putUpdateProfile(this.profileForm)
+        // Don't send photo_avatar_filename in profile update (it's handled by upload endpoint)
+        const dataToUpdate = {
+          name: this.profileForm.name,
+          nickname: this.profileForm.nickname,
+          bio: this.profileForm.bio,
+        }
+        
+        const response = await apiStore.putUpdateProfile(dataToUpdate)
 
         authStore.setUser(response.user)
         this.successMessage = 'Profile updated successfully!'
+        
+        // Clear localStorage after successful save and reload profile
+        localStorage.removeItem('avatarPreview')
+        this.loadProfile() // Reload to show the saved avatar from BD
+        
         setTimeout(() => (this.successMessage = ''), 3000)
       } catch (error) {
         this.errors = getValidationErrors(error)
