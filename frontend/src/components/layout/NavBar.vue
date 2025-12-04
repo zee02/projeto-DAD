@@ -25,6 +25,12 @@
                         <RouterLink to="/profile">Profile</RouterLink>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
+                <NavigationMenuItem v-if="userLoggedIn && user && user.type === 'A'">
+                    <NavigationMenuLink>
+                        <RouterLink to="/admin">Admin</RouterLink>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
+
                 <NavigationMenuItem v-if="userLoggedIn">
                     <NavigationMenuLink>
                         <a @click.prevent="logoutClickHandler">Logout</a>
@@ -47,7 +53,7 @@ import {
 
 
 const emits = defineEmits(['logout'])
-const { userLoggedIn } = defineProps(['userLoggedIn'])
+const { userLoggedIn, user } = defineProps(['userLoggedIn', 'user'])
 
 const logoutClickHandler = () => {
     emits('logout')

@@ -31,6 +31,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Coin purchase routes
     Route::post('/coin-purchase/buy', [CoinPurchaseController::class, 'buy']);
     Route::get('/coin-purchase/history', [CoinPurchaseController::class, 'history']);
+    
+        // Admin routes (require admin user)
+        Route::middleware([\App\Http\Middleware\EnsureAdmin::class])->prefix('admin')->group(function () {
+            Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users']);
+            Route::patch('/users/{id}/block', [\App\Http\Controllers\AdminController::class, 'updateUserBlock']);
+            Route::get('/users/{id}', [\App\Http\Controllers\AdminController::class, 'showUser']);
+            Route::post('/users/{id}/avatar', [\App\Http\Controllers\AdminController::class, 'uploadUserAvatar']);
+            Route::put('/users/{id}', [\App\Http\Controllers\AdminController::class, 'updateUser']);
+            Route::delete('/users/{id}', [\App\Http\Controllers\AdminController::class, 'deleteUser']);
+            Route::post('/admins', [\App\Http\Controllers\AdminController::class, 'createAdmin']);
+            Route::get('/transactions', [\App\Http\Controllers\AdminController::class, 'transactions']);
+        });
 });
 
 Route::apiResource('games', GameController::class);

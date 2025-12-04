@@ -12,7 +12,7 @@
         <span class="text-sm font-semibold text-yellow-900">{{ authStore.user?.coins_balance || 0 }} 🪙</span>
         <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">+</span>
       </div>
-      <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" />
+      <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" :user="authStore.user" />
     </div>
   </nav>
   <div>

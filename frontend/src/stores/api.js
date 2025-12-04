@@ -99,6 +99,43 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/games?${queryParams}`)
   }
 
+  // Admin
+  const getAdminUsers = (page = 1, per_page = 25) => {
+    return axios.get(`${API_BASE_URL}/admin/users`, { params: { page, per_page } })
+  }
+
+  const patchUserBlock = (id, blocked) => {
+    return axios.patch(`${API_BASE_URL}/admin/users/${id}/block`, { blocked })
+  }
+
+  const putUpdateUser = (id, payload) => {
+    return axios.put(`${API_BASE_URL}/admin/users/${id}`, payload)
+  }
+
+  const deleteUser = (id) => {
+    return axios.delete(`${API_BASE_URL}/admin/users/${id}`)
+  }
+
+  const postCreateAdmin = (payload) => {
+    return axios.post(`${API_BASE_URL}/admin/admins`, payload)
+  }
+
+  const getAdminTransactions = (page = 1, per_page = 25) => {
+    return axios.get(`${API_BASE_URL}/admin/transactions`, { params: { page, per_page } })
+  }
+
+  const getAdminUser = (id) => {
+    return axios.get(`${API_BASE_URL}/admin/users/${id}`)
+  }
+
+  const postUploadUserAvatar = (id, file) => {
+    const formData = new FormData()
+    formData.append('photo', file)
+    return axios.post(`${API_BASE_URL}/admin/users/${id}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  }
+
   return {
     postRegister,
     postLogin,
@@ -112,5 +149,14 @@ export const useAPIStore = defineStore('api', () => {
     getCoinPurchaseHistory,
     getGames,
     gameQueryParameters,
+    // Admin exports
+    getAdminUsers,
+    patchUserBlock,
+    postCreateAdmin,
+    getAdminTransactions,
+    putUpdateUser,
+    deleteUser,
+    getAdminUser,
+    postUploadUserAvatar,
   }
 })
