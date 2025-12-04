@@ -12,13 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('nickname')->nullable();
-            $table->string('type')->default('user');
-            $table->boolean('blocked')->default(false);
-            $table->string('photo_avatar_filename')->nullable();
-            $table->text('bio')->nullable();
-            $table->integer('coins_balance')->default(0);
-            $table->softDeletes();
+            if (!Schema::hasColumn('users', 'type')) {
+                $table->string('type')->default('user');
+            }
+            if (!Schema::hasColumn('users', 'blocked')) {
+                $table->boolean('blocked')->default(false);
+            }
+            if (!Schema::hasColumn('users', 'photo_avatar_filename')) {
+                $table->string('photo_avatar_filename')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'coins_balance')) {
+                $table->integer('coins_balance')->default(0);
+            }
+            if (!Schema::hasColumn('users', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
     }
 
@@ -28,8 +36,25 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['nickname', 'type', 'blocked', 'photo_avatar_filename', 'bio', 'coins_balance']);
-            $table->dropSoftDeletes();
+            $columns = [];
+            if (Schema::hasColumn('users', 'type')) {
+                $columns[] = 'type';
+            }
+            if (Schema::hasColumn('users', 'blocked')) {
+                $columns[] = 'blocked';
+            }
+            if (Schema::hasColumn('users', 'photo_avatar_filename')) {
+                $columns[] = 'photo_avatar_filename';
+            }
+            if (Schema::hasColumn('users', 'coins_balance')) {
+                $columns[] = 'coins_balance';
+            }
+            if (!empty($columns)) {
+                $table->dropColumn($columns);
+            }
+            if (Schema::hasColumn('users', 'deleted_at')) {
+                $table->dropSoftDeletes();
+            }
         });
     }
 };
