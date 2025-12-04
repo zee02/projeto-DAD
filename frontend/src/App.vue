@@ -1,11 +1,8 @@
 <template>
   <Toaster richColors />
-  <nav class="max-w-full p-5 flex flex-row justify-between align-middle">
+  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-white shadow-md p-5 flex flex-row justify-between align-middle">
     <div class="align-middle text-xl">
       <RouterLink to="/"> {{ pageTitle }} </RouterLink>
-      <span class="text-xs" v-if="authStore.currentUser">&nbsp;&nbsp;&nbsp;
-        ({{ authStore.currentUser?.name }})
-      </span>
     </div>
     <div class="flex items-center gap-6">
       <div v-if="authStore.isLoggedIn" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-200 transition relative" @click="$router.push('/coin-shop')">
@@ -15,7 +12,7 @@
       <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" :user="authStore.user" />
     </div>
   </nav>
-  <div>
+  <div class="pt-20">
     <main class="container m-auto">
       <RouterView />
     </main>
