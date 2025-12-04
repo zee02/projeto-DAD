@@ -98,6 +98,10 @@ class AdminController extends Controller
             return response()->json(['message' => 'Cannot delete yourself'], 422);
         }
 
+        // Set coins to zero before deleting
+        $user->coins_balance = 0;
+        $user->save();
+
         $user->delete();
 
         return response()->json(['message' => 'User deleted']);

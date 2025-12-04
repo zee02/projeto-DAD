@@ -205,19 +205,81 @@
           </p>
         </div>
 
+        <!-- Confirmation Method Selector -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Your Password</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Choose confirmation method:</label>
+          <div class="space-y-2">
+            <label class="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                v-model="deleteForm.confirmationType"
+                value="password"
+                class="mr-2"
+              />
+              <span>Confirm with password</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                v-model="deleteForm.confirmationType"
+                value="username"
+                class="mr-2"
+              />
+              <span>Confirm with username</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+              <input
+                type="radio"
+                v-model="deleteForm.confirmationType"
+                value="phrase"
+                class="mr-2"
+              />
+              <span>Confirm with phrase</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Password Confirmation -->
+        <div v-if="deleteForm.confirmationType === 'password'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Enter Your Password</label>
           <input
             v-model="deleteForm.password"
             type="password"
+            placeholder="Enter your password"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+          />
+        </div>
+
+        <!-- Username Confirmation -->
+        <div v-if="deleteForm.confirmationType === 'username'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Type your username "<code class="bg-gray-100 px-1 rounded">{{ user?.username }}</code>" to confirm
+          </label>
+          <input
+            v-model="deleteForm.username"
+            type="text"
+            :placeholder="user?.username"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+          />
+        </div>
+
+        <!-- Phrase Confirmation -->
+        <div v-if="deleteForm.confirmationType === 'phrase'">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            Type the phrase "<code class="bg-gray-100 px-1 rounded text-red-600">{{ confirmationPhrase }}</code>" to confirm
+          </label>
+          <input
+            v-model="deleteForm.phrase"
+            type="text"
+            :placeholder="confirmationPhrase"
             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
           />
         </div>
 
         <button
           @click="showDeleteConfirmation = true"
-          :disabled="!deleteForm.password || isDeleting"
-          class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+          :disabled="!isDeleteConfirmationValid || isDeleting"
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ isDeleting ? 'Deleting...' : 'Delete My Account' }}
         </button>
@@ -279,8 +341,12 @@ export default {
         new_password_confirmation: '',
       },
       deleteForm: {
+        confirmationType: 'password',
         password: '',
+        username: '',
+        phrase: '',
       },
+      confirmationPhrase: 'DELETE MY ACCOUNT',
       isUpdating: false,
       isChangingPassword: false,
       isDeleting: false,
@@ -296,6 +362,20 @@ export default {
     user() {
       const authStore = useAuthStore()
       return authStore.user
+    },
+    isDeleteConfirmationValid() {
+      const { confirmationType, password, username, phrase } = this.deleteForm
+      
+      if (confirmationType === 'password') {
+        return password.length > 0
+      }
+      if (confirmationType === 'username') {
+        return username === this.user?.username
+      }
+      if (confirmationType === 'phrase') {
+        return phrase === this.confirmationPhrase
+      }
+      return false
     },
   },
   watch: {
@@ -471,7 +551,9 @@ export default {
         const apiStore = useAPIStore()
         const authStore = useAuthStore()
         
-        await apiStore.deleteAccount(this.deleteForm.password)
+        // Only send password if password confirmation was used
+        const password = this.deleteForm.confirmationType === 'password' ? this.deleteForm.password : null
+        await apiStore.deleteAccount(password)
 
         // Show success message before logout
         this.successMessage = 'Account deleted successfully. Your account is now deactivated. Redirecting...'

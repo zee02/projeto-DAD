@@ -51,8 +51,9 @@ export const useAPIStore = defineStore('api', () => {
   }
 
   const deleteAccount = async (password) => {
+    const data = password ? { password } : {}
     const response = await axios.delete(`${API_BASE_URL}/user/account`, {
-      data: { password }
+      data
     })
     return response.data
   }
