@@ -20,6 +20,14 @@
         <RouterLink class="mt-3 inline-block text-blue-600" to="/admin/transactions">View Transactions →</RouterLink>
       </div>
 
+      
+
+      <div class="p-4 border rounded">
+        <h2 class="font-semibold">Admin Analytics</h2>
+        <p class="text-sm text-slate-500">Sales and game volume analytics.</p>
+        <RouterLink class="mt-3 inline-block text-blue-600" to="/admin/analytics">View Analytics →</RouterLink>
+      </div>
+
       <div class="p-4 border rounded">
         <h2 class="font-semibold">Games</h2>
         <p class="text-sm text-slate-500">Read-only list of games.</p>

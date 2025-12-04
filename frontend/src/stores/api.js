@@ -136,6 +136,28 @@ export const useAPIStore = defineStore('api', () => {
     })
   }
 
+  // Leaderboards & Stats (public)
+  const getLeaderboards = (type = 'wins', page = 1, per_page = 25) => {
+    return axios.get(`${API_BASE_URL}/leaderboards/${type}`, { params: { page, per_page } })
+  }
+
+  const getOverviewStats = () => {
+    return axios.get(`${API_BASE_URL}/stats/overview`)
+  }
+
+  const getAnonymousStats = (days = 30) => {
+    return axios.get(`${API_BASE_URL}/stats/anonymous`, { params: { days } })
+  }
+
+  // Admin analytics
+  const getAdminSalesOverTime = (days = 30) => {
+    return axios.get(`${API_BASE_URL}/admin/analytics/sales`, { params: { days } })
+  }
+
+  const getAdminGamesOverTime = (days = 30) => {
+    return axios.get(`${API_BASE_URL}/admin/analytics/games`, { params: { days } })
+  }
+
   return {
     postRegister,
     postLogin,
@@ -158,5 +180,12 @@ export const useAPIStore = defineStore('api', () => {
     deleteUser,
     getAdminUser,
     postUploadUserAvatar,
+    // Leaderboards & stats
+    getLeaderboards,
+    getOverviewStats,
+    getAnonymousStats,
+    // Admin analytics
+    getAdminSalesOverTime,
+    getAdminGamesOverTime,
   }
 })

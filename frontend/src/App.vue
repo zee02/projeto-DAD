@@ -27,6 +27,7 @@ import { RouterLink, RouterView } from 'vue-router';
 import { toast } from 'vue-sonner';
 import 'vue-sonner/style.css'
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router'
 import { Toaster } from '@/components/ui/sonner'
 import NavBar from './components/layout/NavBar.vue';
 import { useAuthStore } from './stores/auth';
@@ -41,16 +42,21 @@ const pageTitle = ref(`DAD ${year}/${String(year + 1).slice(-2)}`)
 
 
 
-const logout = () => {
+const router = useRouter()
 
-  toast.promise(authStore.logout(), {
+const logout = () => {
+  const p = authStore.logout()
+
+  toast.promise(p, {
     loading: 'Calling API',
-    success: () => {
-      return 'Logout Sucessfull '
-    },
-    error: (data) => `[API] Error saving game - ${data?.response?.data?.message}`,
+    success: () => 'Logout Successful',
+    error: (data) => `[API] Error - ${data?.response?.data?.message}`,
   })
 
+  p.then(() => {
+    // After logout, redirect to home and clear any route-sensitive state
+    router.push('/login')
+  })
 }
 
 onMounted(() => {

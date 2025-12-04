@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useAPIStore } from './api'
+import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', () => {
   const apiStore = useAPIStore()
@@ -48,6 +49,12 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
+    // Remove authorization header so unauthenticated users cannot call protected APIs
+    try {
+      delete axios.defaults.headers.common['Authorization']
+    } catch (e) {
+      // ignore
+    }
   }
 
   const setToken = (newToken) => {

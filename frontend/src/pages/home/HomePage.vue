@@ -57,6 +57,16 @@ const goToHistory = () => {
 const goToAdmin = () => {
   router.push({ name: 'admin' })
 }
+
+const goToLeaderboards = () => {
+  router.push('/leaderboards')
+}
+
+const goToStats = () => {
+  router.push('/stats')
+}
+
+// admin analytics navigation removed from main page (nav-only)
 </script>
 
 <template>
@@ -163,12 +173,15 @@ const goToAdmin = () => {
           </div>
         </div>
 
-        <!-- ADMIN PANEL -->
-        <div v-if="user?.type === 'A'" class="text-center">
-          <Button @click="goToAdmin" variant="destructive" class="w-full">
-            Administração da Plataforma
-          </Button>
+        <!-- NAV BUTTONS -->
+        <div class="grid grid-cols-1 gap-2">
+          <Button @click="goToLeaderboards" class="w-full" variant="outline">View Leaderboards</Button>
+          <Button @click="goToStats" class="w-full" variant="outline">View Site Statistics</Button>
         </div>
+
+        <!-- Admin analytics removed from main screen; accessible via nav for admins -->
+
+        <!-- ADMIN PANEL removed from main screen -->
 
       </CardContent>
     </Card>

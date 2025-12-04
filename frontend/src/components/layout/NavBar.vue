@@ -15,6 +15,29 @@
                         </li>
                     </NavigationMenuContent>
                 </NavigationMenuItem>
+                <NavigationMenuItem>
+                    <NavigationMenuLink>
+                        <RouterLink to="/">Home</RouterLink>
+                    </NavigationMenuLink>
+                </NavigationMenuItem>
+                
+                <NavigationMenuItem>
+                    <NavigationMenuTrigger>Stats</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                        <li>
+                            <NavigationMenuLink as-child>
+                                <RouterLink to="/leaderboards">Leaderboards</RouterLink>
+                            </NavigationMenuLink>
+                            <NavigationMenuLink as-child>
+                                <RouterLink to="/stats">Site Statistics</RouterLink>
+                            </NavigationMenuLink>
+
+                            <NavigationMenuLink v-if="userLoggedIn && user && user.type === 'A'" as-child>
+                                <RouterLink to="/admin/analytics">Admin Analytics</RouterLink>
+                            </NavigationMenuLink>
+                        </li>
+                    </NavigationMenuContent>
+                </NavigationMenuItem>
                 <NavigationMenuItem v-if="!userLoggedIn">
                     <NavigationMenuLink>
                         <RouterLink to="/login">Login</RouterLink>

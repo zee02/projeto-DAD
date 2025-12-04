@@ -18,7 +18,7 @@
           <td class="p-2">{{ u.id }}</td>
           <td class="p-2">{{ u.name }}</td>
           <td class="p-2">{{ u.email }}</td>
-          <td class="p-2">{{ u.type }}</td>
+          <td class="p-2">{{ formatUserType(u.type) }}</td>
           <td class="p-2">{{ u.blocked ? 'Yes' : 'No' }}</td>
           <td class="p-2">
             <button class="px-3 py-1 rounded bg-indigo-600 text-white" @click="goToActions(u)">Actions</button>
@@ -58,6 +58,13 @@ const toggleBlock = async (u) => {
     console.error(e)
     alert('Failed to update user')
   }
+}
+
+const formatUserType = (t) => {
+  if (!t) return ''
+  if (t === 'A') return 'Admin'
+  if (t === 'P') return 'Player'
+  return t
 }
 
 const goToActions = (u) => {

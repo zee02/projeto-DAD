@@ -10,6 +10,9 @@ import AdminUsers from '@/pages/admin/UsersAdmin.vue'
 import AdminCreate from '@/pages/admin/CreateAdmin.vue'
 import AdminTransactions from '@/pages/admin/TransactionsAdmin.vue'
 import AdminGames from '@/pages/admin/GamesAdmin.vue'
+import Leaderboards from '@/pages/stats/Leaderboards.vue'
+import AnonymousStats from '@/pages/stats/AnonymousStats.vue'
+import AdminStats from '@/pages/admin/AdminStats.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
 // Navigation guard to protect admin routes using client-side check
@@ -19,6 +22,15 @@ const isUserAdmin = () => {
   try {
     const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
     return user && user.type === 'A'
+  } catch (e) {
+    return false
+  }
+}
+
+const isUserLoggedIn = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
+    return !!user
   } catch (e) {
     return false
   }
@@ -92,6 +104,19 @@ const router = createRouter({
       component: AdminGames,
       meta: { requiresAdmin: true },
     },
+    {
+      path: '/admin/analytics',
+      component: AdminStats,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/leaderboards',
+      component: Leaderboards,
+    },
+    {
+      path: '/stats',
+      component: AnonymousStats,
+    },
   ],
 })
 
@@ -99,10 +124,16 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   if (to.meta?.requiresAdmin) {
     if (!isUserAdmin()) {
-      // redirect unauthorized users to home
       return next('/')
     }
   }
+
+  if (to.meta?.requiresAuth) {
+    if (!isUserLoggedIn()) {
+      return next('/login')
+    }
+  }
+
   return next()
 })
 

@@ -42,7 +42,16 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/users/{id}', [\App\Http\Controllers\AdminController::class, 'deleteUser']);
             Route::post('/admins', [\App\Http\Controllers\AdminController::class, 'createAdmin']);
             Route::get('/transactions', [\App\Http\Controllers\AdminController::class, 'transactions']);
+            Route::get('/analytics/sales', [\App\Http\Controllers\StatsController::class, 'salesOverTime']);
+            Route::get('/analytics/games', [\App\Http\Controllers\StatsController::class, 'gamesOverTime']);
         });
 });
 
 Route::apiResource('games', GameController::class);
+
+// Public stats and leaderboards
+Route::get('/leaderboards/wins', [\App\Http\Controllers\StatsController::class, 'leaderboardWins']);
+Route::get('/leaderboards/capotes', [\App\Http\Controllers\StatsController::class, 'leaderboardCapotes']);
+Route::get('/leaderboards/flags', [\App\Http\Controllers\StatsController::class, 'leaderboardFlags']);
+Route::get('/stats/overview', [\App\Http\Controllers\StatsController::class, 'overview']);
+Route::get('/stats/anonymous', [\App\Http\Controllers\StatsController::class, 'anonymousStats']);
