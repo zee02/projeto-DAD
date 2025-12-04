@@ -19,11 +19,11 @@ spec:
           image: registry-172.22.21.115.sslip.io/dad-group-10/ws:v1.0.0
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "50m"
+              memory: "64Mi"
+              cpu: "25m"
             limits:
-              memory: "256Mi"
-              cpu: "200m"
+              memory: "128Mi"
+              cpu: "100m"
 
 ---
 apiVersion: v1

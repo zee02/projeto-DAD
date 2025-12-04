@@ -47,6 +47,37 @@ services:
                 - "-p${DB_PASSWORD}"
             retries: 3
             timeout: 5s
+    
+    # Vue Frontend
+    vue:
+        build:
+            context: "../"
+            dockerfile: deployment/DockerfileVue
+        container_name: dad-vue
+        ports:
+            - "8080:80"
+        depends_on:
+            - laravel.test
+        networks:
+            - sail
+        environment:
+            VITE_API_BASE_URL: http://localhost/api
+    
+    # WebSocket Server
+    websockets:
+        build:
+            context: "../"
+            dockerfile: deployment/DockerfileWS
+        container_name: dad-websockets
+        ports:
+            - "3000:3000"
+        networks:
+            - sail
+        environment:
+            NODE_ENV: production
+        depends_on:
+            - laravel.test
+
 networks:
     sail:
         driver: bridge
