@@ -99,6 +99,7 @@ const id = route.params.id
   const loading = ref(true)
   const form = ref({ name: '', nickname: '', email: '', type: 'P', blocked: false, password: '', bio: '', coins_balance: 0, photo_avatar_url: null })
   const selectedFileName = ref(null)
+  const avatarFile = ref(null)
 
 const load = async () => {
   loading.value = true
@@ -124,6 +125,19 @@ const load = async () => {
 
 const save = async () => {
   try {
+    // Upload avatar first if a new one was selected
+    if (avatarFile.value) {
+      try {
+        const res = await api.postUploadUserAvatar(id, avatarFile.value)
+        form.value.photo_avatar_url = res.data.photo_avatar_url
+        avatarFile.value = null // Clear the stored file
+      } catch (err) {
+        console.error(err)
+        toast.error('Avatar upload failed: ' + getErrorMessage(err))
+        return
+      }
+    }
+
     const payload = {
       name: form.value.name,
       nickname: form.value.nickname,
@@ -157,18 +171,20 @@ const confirmDelete = async () => {
 
 onMounted(load)
 
-const uploadAvatar = async (e) => {
+const uploadAvatar = (e) => {
   const file = e.target.files && e.target.files[0]
   if (!file) return
-  if (file) selectedFileName.value = file.name
-  try {
-    const res = await api.postUploadUserAvatar(id, file)
-    form.value.photo_avatar_url = res.data.photo_avatar_url
-    toast.success('Avatar uploaded')
-  } catch (err) {
-    console.error(err)
-    toast.error(getErrorMessage(err))
+  
+  // Store file for later upload when Save is clicked
+  avatarFile.value = file
+  selectedFileName.value = file.name
+  
+  // Show preview immediately
+  const reader = new FileReader()
+  reader.onload = (event) => {
+    form.value.photo_avatar_url = event.target.result
   }
+  reader.readAsDataURL(file)
 }
 </script>
 
