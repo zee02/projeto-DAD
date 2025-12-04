@@ -1,19 +1,22 @@
+// Eager load only the home page for instant initial render
 import HomePage from '@/pages/home/HomePage.vue'
-import LoginPage from '@/pages/LoginPage.vue'
-import RegisterPage from '@/pages/RegisterPage.vue'
-import ProfilePage from '@/pages/ProfilePage.vue'
-import CoinShopPage from '@/pages/CoinShopPage.vue'
-import LaravelPage from '@/pages/testing/LaravelPage.vue'
-import WebsocketsPage from '@/pages/testing/WebsocketsPage.vue'
-import AdminDashboard from '@/pages/admin/AdminDashboard.vue'
-import AdminUsers from '@/pages/admin/UsersAdmin.vue'
-import AdminCreate from '@/pages/admin/CreateAdmin.vue'
-import AdminTransactions from '@/pages/admin/TransactionsAdmin.vue'
-import AdminGames from '@/pages/admin/GamesAdmin.vue'
-import Leaderboards from '@/pages/stats/Leaderboards.vue'
-import AnonymousStats from '@/pages/stats/AnonymousStats.vue'
-import AdminStats from '@/pages/admin/AdminStats.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Lazy load all other pages to reduce initial bundle size
+const LoginPage = () => import('@/pages/LoginPage.vue')
+const RegisterPage = () => import('@/pages/RegisterPage.vue')
+const ProfilePage = () => import('@/pages/ProfilePage.vue')
+const CoinShopPage = () => import('@/pages/CoinShopPage.vue')
+const LaravelPage = () => import('@/pages/testing/LaravelPage.vue')
+const WebsocketsPage = () => import('@/pages/testing/WebsocketsPage.vue')
+const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
+const AdminUsers = () => import('@/pages/admin/UsersAdmin.vue')
+const AdminCreate = () => import('@/pages/admin/CreateAdmin.vue')
+const AdminTransactions = () => import('@/pages/admin/TransactionsAdmin.vue')
+const AdminGames = () => import('@/pages/admin/GamesAdmin.vue')
+const Leaderboards = () => import('@/pages/stats/Leaderboards.vue')
+const AnonymousStats = () => import('@/pages/stats/AnonymousStats.vue')
+const AdminStats = () => import('@/pages/admin/AdminStats.vue')
 
 // Navigation guard to protect admin routes using client-side check
 // (server-side middleware also enforces authorization). We rely on localStorage
