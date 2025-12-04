@@ -79,7 +79,7 @@ const goToStats = () => {
       <!-- Left Section - Game Actions (2 cols on large screens) -->
       <div class="lg:col-span-2 space-y-8">
         <!-- Play Card -->
-        <div class="bg-white shadow-lg rounded-2xl p-8">
+        <div v-if="user?.type !== 'A'" class="bg-white shadow-lg rounded-2xl p-8">
           <div class="mb-6">
             <h2 class="text-2xl font-bold text-gray-900">Play</h2>
             <p class="mt-1 text-gray-600">Choose a mode and start a match quickly</p>

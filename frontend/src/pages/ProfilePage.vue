@@ -42,6 +42,7 @@
           Change Password
         </button>
         <button
+          v-if="user?.type !== 'A'"
           @click="activeTab = 'delete'"
           :class="[
             'pb-2 px-4 font-semibold border-b-2 transition',
@@ -197,7 +198,7 @@
       </div>
 
       <!-- Delete Account Tab -->
-      <div v-if="activeTab === 'delete'" class="space-y-4">
+      <div v-if="activeTab === 'delete' && user?.type !== 'A'" class="space-y-4">
         <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
           <p class="text-red-900 font-semibold mb-2">⚠️ Warning: This action cannot be undone</p>
           <p class="text-red-800 text-sm">

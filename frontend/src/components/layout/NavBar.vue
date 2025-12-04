@@ -41,6 +41,9 @@
                 <NavigationMenuItem v-if="userLoggedIn" class="relative">
                     <button @click="toggleDropdown" class="flex items-center gap-2 hover:opacity-80 transition">
                         <span class="text-gray-900 font-semibold text-sm max-w-[150px] truncate" :title="user?.nickname || user?.name">{{ user?.nickname || user?.name }}</span>
+                        <svg class="w-4 h-4 text-gray-600 transition-transform" :class="{ 'rotate-180': showDropdown }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
                     </button>
                     
                     <!-- Dropdown Menu -->

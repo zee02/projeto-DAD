@@ -211,6 +211,11 @@ export default {
       this.$router.push('/login')
       return
     }
+    // Admins cannot access coin shop
+    if (authStore.user?.type === 'A') {
+      this.$router.push('/')
+      return
+    }
     this.loadPurchaseHistory()
   },
   methods: {

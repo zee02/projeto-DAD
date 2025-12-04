@@ -5,7 +5,7 @@
       <RouterLink to="/"> {{ pageTitle }} </RouterLink>
     </div>
     <div class="flex items-center gap-6">
-      <div v-if="authStore.isLoggedIn" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-200 transition relative" @click="$router.push('/coin-shop')">
+      <div v-if="authStore.isLoggedIn && authStore.user?.type !== 'A'" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-200 transition relative" @click="$router.push('/coin-shop')">
         <span class="text-sm font-semibold text-yellow-900">{{ authStore.user?.coins_balance || 0 }} 🪙</span>
         <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">+</span>
       </div>

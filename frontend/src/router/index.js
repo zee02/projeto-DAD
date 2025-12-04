@@ -58,6 +58,7 @@ const router = createRouter({
     {
       path: '/coin-shop',
       component: CoinShopPage,
+      meta: { requiresPlayer: true },
     },
     {
       path: '/testing',
@@ -120,10 +121,16 @@ const router = createRouter({
   ],
 })
 
-// Global guard: block access to admin routes if not admin
+// Global guard: block access to admin routes if not admin, and block admins from player-only routes
 router.beforeEach((to, from, next) => {
   if (to.meta?.requiresAdmin) {
     if (!isUserAdmin()) {
+      return next('/')
+    }
+  }
+
+  if (to.meta?.requiresPlayer) {
+    if (isUserAdmin()) {
       return next('/')
     }
   }
