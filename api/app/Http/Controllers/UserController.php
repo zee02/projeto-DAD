@@ -73,12 +73,19 @@ class UserController extends Controller
 
     public function deleteAccount(Request $request)
     {
-        $request->validate(['password' => 'required|string']);
+        $request->validate(['password' => 'nullable|string']);
         $user = $request->user();
 
-        if (!Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Password is incorrect'], 422);
+        // Only check password if it was provided
+        if ($request->has('password') && $request->password) {
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json(['message' => 'Password is incorrect'], 422);
+            }
         }
+
+        // Set coins to zero before deleting
+        $user->coins_balance = 0;
+        $user->save();
 
         $user->delete();
         $user->tokens()->delete();
