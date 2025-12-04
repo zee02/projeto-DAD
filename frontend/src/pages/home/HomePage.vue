@@ -129,7 +129,7 @@ const goToStats = () => {
 
         <!-- Highlights Card -->
         <div class="bg-white shadow-lg rounded-2xl p-8">
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">Highlights</h3>
+          <h3 class="text-2xl font-bold text-gray-900 mb-2">Top Players</h3>
           <p class="text-gray-600 mb-6">Check out the best players and stand out in leaderboards.</p>
 
           <div v-if="leaderboard.length === 0" class="text-center py-8">
