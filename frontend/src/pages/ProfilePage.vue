@@ -289,6 +289,7 @@ export default {
       showDeleteConfirmation: false,
       errors: {},
       avatarPreview: null,
+      avatarFile: null,
     }
   },
   computed: {
@@ -326,37 +327,28 @@ export default {
         if (this.user.photo_avatar_filename) {
           this.avatarPreview = this.getAvatarUrl(this.user.photo_avatar_filename)
         } else {
-          // No avatar saved, check localStorage for unsaved preview
-          const savedPreview = localStorage.getItem('avatarPreview')
-          if (savedPreview) {
-            this.avatarPreview = savedPreview
-          } else {
-            this.avatarPreview = null
-          }
+          this.avatarPreview = null
         }
+        // Reset avatar file
+        this.avatarFile = null
       }
     },
     handleAvatarUpload(event) {
       const file = event.target.files[0]
       if (!file) return
 
+      // Store file for later upload
+      this.avatarFile = file
+
       // Show preview immediately
       const reader = new FileReader()
       reader.onload = (e) => {
         this.avatarPreview = e.target.result
-        // Save to localStorage to persist across page reloads during upload
-        localStorage.setItem('avatarPreview', e.target.result)
       }
       reader.readAsDataURL(file)
-
-      // Upload to server immediately
-      this.uploadAvatarToServer(file)
     },
 
     async uploadAvatarToServer(file) {
-      this.errorMessage = ''
-      this.successMessage = ''
-
       try {
         const apiStore = useAPIStore()
         const authStore = useAuthStore()
@@ -366,19 +358,13 @@ export default {
         // Update user with the response from server
         authStore.setUser(response.user)
         this.profileForm.photo_avatar_filename = response.photo_avatar_filename
-        
-        // Update avatar preview with the storage URL
         this.avatarPreview = response.photo_avatar_url
         
-        // Clear localStorage since upload succeeded
-        localStorage.removeItem('avatarPreview')
-        
-        this.successMessage = 'Avatar uploaded successfully!'
-        setTimeout(() => (this.successMessage = ''), 3000)
+        return true
       } catch (error) {
         this.errorMessage = getErrorMessage(error)
-        // Keep localStorage preview since upload failed - user can try again
         console.error('Avatar upload failed:', error)
+        return false
       }
     },
     getAvatarUrl(filename) {
@@ -396,6 +382,16 @@ export default {
         const apiStore = useAPIStore()
         const authStore = useAuthStore()
         
+        // Upload avatar first if a new one was selected
+        if (this.avatarFile) {
+          const uploadSuccess = await this.uploadAvatarToServer(this.avatarFile)
+          if (!uploadSuccess) {
+            this.isUpdating = false
+            return
+          }
+          this.avatarFile = null // Clear the stored file
+        }
+        
         // Build data object only with non-empty fields
         const dataToUpdate = {}
         
@@ -409,14 +405,14 @@ export default {
           dataToUpdate.bio = this.profileForm.bio.trim()
         }
         
-        const response = await apiStore.putUpdateProfile(dataToUpdate)
-
-        authStore.setUser(response.user)
-        this.successMessage = 'Profile updated successfully!'
+        // Only call updateProfile if there's data to update
+        if (Object.keys(dataToUpdate).length > 0) {
+          const response = await apiStore.putUpdateProfile(dataToUpdate)
+          authStore.setUser(response.user)
+        }
         
-        // Clear localStorage after successful save and reload profile
-        localStorage.removeItem('avatarPreview')
-        this.loadProfile() // Reload to show the saved avatar from BD
+        this.successMessage = 'Profile updated successfully!'
+        this.loadProfile() // Reload to show the saved data
         
         setTimeout(() => (this.successMessage = ''), 3000)
       } catch (error) {
