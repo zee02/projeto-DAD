@@ -128,11 +128,19 @@ const save = async () => {
     // Upload avatar first if a new one was selected
     if (avatarFile.value) {
       try {
+        console.log('Uploading avatar:', avatarFile.value.name)
         const res = await api.postUploadUserAvatar(id, avatarFile.value)
-        form.value.photo_avatar_url = res.data.photo_avatar_url
-        avatarFile.value = null // Clear the stored file
+        console.log('Avatar upload response:', res)
+        
+        if (res.data && res.data.photo_avatar_url) {
+          form.value.photo_avatar_url = res.data.photo_avatar_url
+          avatarFile.value = null // Clear the stored file
+          toast.success('Avatar uploaded successfully')
+        } else {
+          throw new Error('No URL returned from server')
+        }
       } catch (err) {
-        console.error(err)
+        console.error('Avatar upload error:', err)
         toast.error('Avatar upload failed: ' + getErrorMessage(err))
         return
       }
@@ -148,11 +156,13 @@ const save = async () => {
       coins_balance: form.value.coins_balance,
     }
     if (form.value.password) payload.password = form.value.password
+    
+    console.log('Saving user data:', payload)
     await api.putUpdateUser(id, payload)
     toast.success('User updated')
     router.push('/admin/users')
   } catch (e) {
-    console.error(e)
+    console.error('Save error:', e)
     toast.error(getErrorMessage(e))
   }
 }
@@ -175,6 +185,12 @@ const uploadAvatar = (e) => {
   const file = e.target.files && e.target.files[0]
   if (!file) return
   
+  // Validate file
+  if (!file.type.startsWith('image/')) {
+    toast.error('Please select a valid image file')
+    return
+  }
+  
   // Store file for later upload when Save is clicked
   avatarFile.value = file
   selectedFileName.value = file.name
@@ -185,6 +201,8 @@ const uploadAvatar = (e) => {
     form.value.photo_avatar_url = event.target.result
   }
   reader.readAsDataURL(file)
+  
+  toast.success('Image selected - click Save to upload')
 }
 </script>
 
