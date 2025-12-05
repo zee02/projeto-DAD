@@ -9,7 +9,7 @@
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 
-                <NavigationMenuItem>
+                <NavigationMenuItem v-if="userLoggedIn">
                     <NavigationMenuTrigger>Stats</NavigationMenuTrigger>
                     <NavigationMenuContent>
                         <li>

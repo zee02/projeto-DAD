@@ -150,7 +150,10 @@ const pointsLabel = (g) => {
 
 const durationLabel = (g) => {
   if (!g.total_time) return '-'
-  return `${Math.round(g.total_time)}s`
+  const totalSeconds = Math.round(g.total_time)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 </script>
 

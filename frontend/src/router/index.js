@@ -131,6 +131,7 @@ const router = createRouter({
     {
       path: '/stats',
       component: AnonymousStats,
+      meta: { requiresAuth: true },
     },
     {
       path: '/history',
@@ -148,6 +149,11 @@ const router = createRouter({
 
 // Global guard: block access to admin routes if not admin, and block admins from player-only routes
 router.beforeEach((to, from, next) => {
+  // Prevent logged-in users from accessing login and register pages
+  if (isUserLoggedIn() && (to.path === '/login' || to.path === '/register')) {
+    return next('/')
+  }
+
   // Allow blocked users to access only the blocked page and login page
   if (isUserBlocked() && to.path !== '/blocked' && to.path !== '/login') {
     return next('/blocked')

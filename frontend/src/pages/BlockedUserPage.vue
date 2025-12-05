@@ -10,20 +10,20 @@
           </div>
         </div>
 
-        <h1 class="text-3xl font-bold text-gray-900 mb-3">Conta Bloqueada</h1>
+        <h1 class="text-3xl font-bold text-gray-900 mb-3">Account Blocked</h1>
         <p class="text-gray-600 mb-6">
-          A sua conta foi bloqueada por um administrador. Não pode aceder à plataforma neste momento.
+          Your account has been blocked by an administrator. You cannot access the platform right now.
         </p>
 
         <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p class="text-sm text-red-800">
-            Se acha que isto é um erro, contacte o suporte ou um administrador da plataforma.
+            If you believe this is a mistake, please contact support or a platform administrator.
           </p>
         </div>
 
         <button @click="handleLogout" 
           class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 transition-colors">
-          Terminar Sessão
+          Log Out
         </button>
       </div>
     </div>
