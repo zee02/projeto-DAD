@@ -1,6 +1,6 @@
 <template>
   <Toaster richColors />
-  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-white shadow-md p-5 flex flex-row justify-between align-middle">
+  <nav v-if="$route.path !== '/blocked'" class="fixed top-0 left-0 right-0 z-50 w-full bg-white shadow-md p-5 flex flex-row justify-between align-middle">
     <div class="align-middle text-xl">
       <RouterLink to="/"> {{ pageTitle }} </RouterLink>
     </div>
@@ -12,7 +12,7 @@
       <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" :user="authStore.user" />
     </div>
   </nav>
-  <div class="pt-20">
+  <div :class="$route.path !== '/blocked' ? 'pt-20' : ''">
     <main class="container m-auto">
       <RouterView />
     </main>
