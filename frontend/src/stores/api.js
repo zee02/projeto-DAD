@@ -51,8 +51,9 @@ export const useAPIStore = defineStore('api', () => {
   }
 
   const deleteAccount = async (password) => {
+    const data = password ? { password } : {}
     const response = await axios.delete(`${API_BASE_URL}/user/account`, {
-      data: { password }
+      data
     })
     return response.data
   }
@@ -141,6 +142,11 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/leaderboards/${type}`, { params: { page, per_page } })
   }
 
+  // Authenticated: user's own games
+  const getMyGames = (params = {}) => {
+    return axios.get(`${API_BASE_URL}/user/games`, { params })
+  }
+
   const getOverviewStats = () => {
     return axios.get(`${API_BASE_URL}/stats/overview`)
   }
@@ -182,6 +188,7 @@ export const useAPIStore = defineStore('api', () => {
     postUploadUserAvatar,
     // Leaderboards & stats
     getLeaderboards,
+    getMyGames,
     getOverviewStats,
     getAnonymousStats,
     // Admin analytics
