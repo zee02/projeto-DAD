@@ -1,6 +1,12 @@
 FROM oven/bun:1 AS build-stage
 WORKDIR /app
 
+# Build-time config (passed via --build-arg). Defaults keep behavior unchanged.
+ARG VITE_API_BASE_URL=""
+ARG VITE_WS_CONNECTION=""
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+ENV VITE_WS_CONNECTION=${VITE_WS_CONNECTION}
+
 COPY package.json  ./
 RUN bun install
 
