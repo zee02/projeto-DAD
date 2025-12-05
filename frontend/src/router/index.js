@@ -17,6 +17,11 @@ const AdminGames = () => import('@/pages/admin/GamesAdmin.vue')
 const Leaderboards = () => import('@/pages/stats/Leaderboards.vue')
 const AnonymousStats = () => import('@/pages/stats/AnonymousStats.vue')
 const AdminStats = () => import('@/pages/admin/AdminStats.vue')
+<<<<<<< HEAD
+=======
+const HistoryPage = () => import('@/pages/HistoryPage.vue')
+const BlockedUserPage = () => import('@/pages/BlockedUserPage.vue')
+>>>>>>> joao_dev
 
 // Navigation guard to protect admin routes using client-side check
 // (server-side middleware also enforces authorization). We rely on localStorage
@@ -34,6 +39,15 @@ const isUserLoggedIn = () => {
   try {
     const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
     return !!user
+  } catch (e) {
+    return false
+  }
+}
+
+const isUserBlocked = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
+    return user && user.blocked === true
   } catch (e) {
     return false
   }
@@ -120,12 +134,39 @@ const router = createRouter({
     {
       path: '/stats',
       component: AnonymousStats,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/history',
+      name: 'history',
+      component: HistoryPage,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/blocked',
+      name: 'blocked',
+      component: BlockedUserPage,
     },
   ],
 })
 
 // Global guard: block access to admin routes if not admin, and block admins from player-only routes
 router.beforeEach((to, from, next) => {
+  // Prevent logged-in users from accessing login and register pages
+  if (isUserLoggedIn() && (to.path === '/login' || to.path === '/register')) {
+    return next('/')
+  }
+
+  // Allow blocked users to access only the blocked page and login page
+  if (isUserBlocked() && to.path !== '/blocked' && to.path !== '/login') {
+    return next('/blocked')
+  }
+
+  // Don't allow access to blocked page if user is not blocked
+  if (to.path === '/blocked' && !isUserBlocked()) {
+    return next('/')
+  }
+
   if (to.meta?.requiresAdmin) {
     if (!isUserAdmin()) {
       return next('/')
