@@ -3,7 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAPIStore } from '@/stores/api'
 import { useAuthStore } from '@/stores/auth'
+import SinglePlayerGame from '@/pages/game/SinglePlayerGame.vue'
 
+const gameMode = ref(null) // null | '3' | '9'
 const router = useRouter()
 const apiStore = useAPIStore()
 const authStore = useAuthStore()
@@ -72,6 +74,8 @@ const startSingleplayer = (mode) => {
   router.push({ name: 'singleplayer', query: { mode } })
 }
 
+
+
 const goToMultiplayer = () => {
   router.push({ name: 'multiplayer' })
 }
@@ -106,53 +110,67 @@ const goToStats = () => {
       <!-- Left Section - Game Actions (2 cols on large screens) -->
       <div class="lg:col-span-2 space-y-8">
         <!-- Play Card -->
-        <div v-if="user?.type !== 'A'" class="bg-white shadow-lg rounded-2xl p-8">
-          <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Play</h2>
-            <p class="mt-1 text-gray-600">Choose a mode and start a match quickly</p>
-          </div>
+       <!-- Play Card -->
+<div v-if="user?.type !== 'A'" class="bg-white shadow-lg rounded-2xl p-8">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-900">Play</h2>
+    <p class="mt-1 text-gray-600">Choose a mode and start a match</p>
+  </div>
 
-          <!-- Game Mode Buttons -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <button @click="startSingleplayer('3')" 
-              class="group relative overflow-hidden bg-linear-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div class="flex items-center gap-4">
-                <div class="p-3 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition-transform">
-                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                </div>
-                <div class="text-left">
-                  <div class="font-semibold text-gray-900">Bisca 3 Cards</div>
-                  <div class="text-sm text-gray-600">Quick match</div>
-                </div>
-              </div>
-            </button>
+  <!-- 4 Game Mode Buttons -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
 
-            <button @click="startSingleplayer('9')" 
-              class="group relative overflow-hidden bg-linear-to-br from-purple-50 to-purple-100 border-2 border-purple-200 rounded-xl p-5 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div class="flex items-center gap-4">
-                <div class="p-3 rounded-lg bg-purple-500 text-white group-hover:scale-110 transition-transform">
-                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/></svg>
-                </div>
-                <div class="text-left">
-                  <div class="font-semibold text-gray-900">Bisca 9 Cards</div>
-                  <div class="text-sm text-gray-600">Full match</div>
-                </div>
-              </div>
-            </button>
-          </div>
-
-          <!-- Action Buttons -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <button @click="goToMultiplayer" 
-              class="col-span-2 bg-linear-to-r from-indigo-600 to-indigo-700 text-white font-semibold rounded-lg py-3 px-4 hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg">
-              Enter Multiplayer
-            </button>
-            <button @click="goToHistory" 
-              class="bg-white border-2 border-gray-200 text-gray-900 font-semibold rounded-lg py-3 px-4 hover:bg-gray-50 transition-all duration-200">
-              View History
-            </button>
-          </div>
+    <!-- Bisca 3 - Singleplayer -->
+    <button @click="startSingleplayer('3')"
+      class="group bg-blue-50 border-2 border-blue-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      <div class="flex items-center gap-4">
+        <div class="p-3 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition">🎮</div>
+        <div>
+          <div class="font-semibold text-gray-900">Bisca 3 Cards</div>
+          <div class="text-sm text-gray-600">Singleplayer</div>
         </div>
+      </div>
+    </button>
+
+    <!-- Bisca 9 - Singleplayer -->
+    <button @click="startSingleplayer('9')"
+      class="group bg-purple-50 border-2 border-purple-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      <div class="flex items-center gap-4">
+        <div class="p-3 rounded-lg bg-purple-500 text-white group-hover:scale-110 transition">🧩</div>
+        <div>
+          <div class="font-semibold text-gray-900">Bisca 9 Cards</div>
+          <div class="text-sm text-gray-600">Singleplayer</div>
+        </div>
+      </div>
+    </button>
+
+    <!-- Bisca 3 - Multiplayer -->
+    <button @click="startMultiplayer('3')"
+      class="group bg-green-50 border-2 border-green-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      <div class="flex items-center gap-4">
+        <div class="p-3 rounded-lg bg-green-500 text-white group-hover:scale-110 transition">⚔️</div>
+        <div>
+          <div class="font-semibold text-gray-900">Bisca 3 Cards</div>
+          <div class="text-sm text-gray-600">Multiplayer</div>
+        </div>
+      </div>
+    </button>
+
+    <!-- Bisca 9 - Multiplayer -->
+    <button @click="startMultiplayer('9')"
+      class="group bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      <div class="flex items-center gap-4">
+        <div class="p-3 rounded-lg bg-yellow-500 text-white group-hover:scale-110 transition">🏆</div>
+        <div>
+          <div class="font-semibold text-gray-900">Bisca 9 Cards</div>
+          <div class="text-sm text-gray-600">Multiplayer</div>
+        </div>
+      </div>
+    </button>
+
+  </div>
+</div>
+
 
         <!-- Highlights Card -->
         <div class="bg-white shadow-lg rounded-2xl p-8">
