@@ -180,7 +180,7 @@ const getStatusVariant = (status) => {
 
 const formatDate = (date) => {
     if (!date) return ''
-    return format(new Date(date), 'PPp')
+    return format(new Date(date), 'dd/MM/yyyy HH:mm')
 }
 
 

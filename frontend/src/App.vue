@@ -1,18 +1,18 @@
 <template>
   <Toaster richColors />
-  <nav class="fixed top-0 left-0 right-0 z-50 w-full bg-white shadow-md p-5 flex flex-row justify-between align-middle">
+  <nav v-if="$route.path !== '/blocked'" class="fixed top-0 left-0 right-0 z-50 w-full bg-white shadow-md p-5 flex flex-row justify-between align-middle">
     <div class="align-middle text-xl">
       <RouterLink to="/"> {{ pageTitle }} </RouterLink>
     </div>
     <div class="flex items-center gap-6">
-      <div v-if="authStore.isLoggedIn" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-200 transition relative" @click="$router.push('/coin-shop')">
+      <div v-if="authStore.isLoggedIn && authStore.user?.type !== 'A'" class="flex items-center gap-2 bg-yellow-100 px-4 py-2 rounded-lg cursor-pointer hover:bg-yellow-200 transition relative" @click="$router.push('/coin-shop')">
         <span class="text-sm font-semibold text-yellow-900">{{ authStore.user?.coins_balance || 0 }} 🪙</span>
         <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">+</span>
       </div>
       <NavBar @logout="logout" :userLoggedIn="authStore.isLoggedIn" :user="authStore.user" />
     </div>
   </nav>
-  <div class="pt-20">
+  <div :class="$route.path !== '/blocked' ? 'pt-20' : ''">
     <main class="container m-auto">
       <RouterView />
     </main>

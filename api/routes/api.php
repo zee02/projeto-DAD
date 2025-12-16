@@ -32,6 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/coin-purchase/buy', [CoinPurchaseController::class, 'buy']);
     Route::get('/coin-purchase/history', [CoinPurchaseController::class, 'history']);
     
+    // User-specific game history
+    Route::get('/user/games', [GameController::class, 'myGames']);
+    
         // Admin routes (require admin user)
         Route::middleware([\App\Http\Middleware\EnsureAdmin::class])->prefix('admin')->group(function () {
             Route::get('/users', [\App\Http\Controllers\AdminController::class, 'users']);

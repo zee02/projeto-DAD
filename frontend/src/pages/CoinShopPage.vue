@@ -211,6 +211,11 @@ export default {
       this.$router.push('/login')
       return
     }
+    // Admins cannot access coin shop
+    if (authStore.user?.type === 'A') {
+      this.$router.push('/')
+      return
+    }
     this.loadPurchaseHistory()
   },
   methods: {
@@ -302,10 +307,10 @@ export default {
 
     formatDate(datetime) {
       const date = new Date(datetime)
-      return date.toLocaleDateString('en-US', {
+      return date.toLocaleDateString('pt-PT', {
         year: 'numeric',
-        month: 'short',
-        day: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
       })

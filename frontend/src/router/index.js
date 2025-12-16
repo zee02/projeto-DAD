@@ -1,19 +1,22 @@
+// Eager load only the home page for instant initial render
 import HomePage from '@/pages/home/HomePage.vue'
-import LoginPage from '@/pages/LoginPage.vue'
-import RegisterPage from '@/pages/RegisterPage.vue'
-import ProfilePage from '@/pages/ProfilePage.vue'
-import CoinShopPage from '@/pages/CoinShopPage.vue'
-import LaravelPage from '@/pages/testing/LaravelPage.vue'
-import WebsocketsPage from '@/pages/testing/WebsocketsPage.vue'
-import AdminDashboard from '@/pages/admin/AdminDashboard.vue'
-import AdminUsers from '@/pages/admin/UsersAdmin.vue'
-import AdminCreate from '@/pages/admin/CreateAdmin.vue'
-import AdminTransactions from '@/pages/admin/TransactionsAdmin.vue'
-import AdminGames from '@/pages/admin/GamesAdmin.vue'
-import Leaderboards from '@/pages/stats/Leaderboards.vue'
-import AnonymousStats from '@/pages/stats/AnonymousStats.vue'
-import AdminStats from '@/pages/admin/AdminStats.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+
+// Lazy load all other pages to reduce initial bundle size
+const LoginPage = () => import('@/pages/LoginPage.vue')
+const RegisterPage = () => import('@/pages/RegisterPage.vue')
+const ProfilePage = () => import('@/pages/ProfilePage.vue')
+const CoinShopPage = () => import('@/pages/CoinShopPage.vue')
+const LaravelPage = () => import('@/pages/testing/LaravelPage.vue')
+const WebsocketsPage = () => import('@/pages/testing/WebsocketsPage.vue')
+const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
+const AdminUsers = () => import('@/pages/admin/UsersAdmin.vue')
+const AdminCreate = () => import('@/pages/admin/CreateAdmin.vue')
+const AdminTransactions = () => import('@/pages/admin/TransactionsAdmin.vue')
+const AdminGames = () => import('@/pages/admin/GamesAdmin.vue')
+const Leaderboards = () => import('@/pages/stats/Leaderboards.vue')
+const AnonymousStats = () => import('@/pages/stats/AnonymousStats.vue')
+const AdminStats = () => import('@/pages/admin/AdminStats.vue')
 
 // Navigation guard to protect admin routes using client-side check
 // (server-side middleware also enforces authorization). We rely on localStorage
@@ -31,6 +34,15 @@ const isUserLoggedIn = () => {
   try {
     const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
     return !!user
+  } catch (e) {
+    return false
+  }
+}
+
+const isUserBlocked = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('auth_user') || 'null')
+    return user && user.blocked === true
   } catch (e) {
     return false
   }
@@ -58,6 +70,7 @@ const router = createRouter({
     {
       path: '/coin-shop',
       component: CoinShopPage,
+      meta: { requiresPlayer: true },
     },
     {
       path: '/testing',
@@ -116,14 +129,53 @@ const router = createRouter({
     {
       path: '/stats',
       component: AnonymousStats,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/history',
+      name: 'history',
+    //    component: HistoryPage,
+      meta: { requiresAuth: true }
+    },
+    {
+  path: '/singleplayer',
+  name: 'singleplayer',
+  component: () => import('@/pages/game/SinglePlayerGame.vue')
+  },
+
+    {
+      path: '/blocked',
+      name: 'blocked',
+    //  component: BlockedUserPage,
     },
   ],
 })
 
-// Global guard: block access to admin routes if not admin
+// Global guard: block access to admin routes if not admin, and block admins from player-only routes
 router.beforeEach((to, from, next) => {
+  // Prevent logged-in users from accessing login and register pages
+  if (isUserLoggedIn() && (to.path === '/login' || to.path === '/register')) {
+    return next('/')
+  }
+
+  // Allow blocked users to access only the blocked page and login page
+  if (isUserBlocked() && to.path !== '/blocked' && to.path !== '/login') {
+    return next('/blocked')
+  }
+
+  // Don't allow access to blocked page if user is not blocked
+  if (to.path === '/blocked' && !isUserBlocked()) {
+    return next('/')
+  }
+
   if (to.meta?.requiresAdmin) {
     if (!isUserAdmin()) {
+      return next('/')
+    }
+  }
+
+  if (to.meta?.requiresPlayer) {
+    if (isUserAdmin()) {
       return next('/')
     }
   }

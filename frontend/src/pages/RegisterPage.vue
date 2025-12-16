@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+  <div class="min-h-screen bg-white flex items-center justify-center px-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Create Account</h1>
 
@@ -68,14 +68,14 @@
             v-model="form.password"
             type="password"
             required
-            minlength="6"
+            minlength="3"
             :class="[
               'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
               errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
             ]"
             placeholder="••••••"
           />
-          <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+          <p class="text-xs text-gray-500 mt-1">Minimum 3 characters</p>
           <p v-if="errors.password" class="text-xs text-red-600 mt-1">{{ errors.password[0] }}</p>
         </div>
 
@@ -87,7 +87,7 @@
             v-model="form.password_confirmation"
             type="password"
             required
-            minlength="6"
+            minlength="3"
             :class="[
               'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
               errors.password_confirmation ? 'border-red-500 bg-red-50' : 'border-gray-300'

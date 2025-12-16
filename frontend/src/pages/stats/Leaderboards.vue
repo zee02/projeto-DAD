@@ -1,35 +1,122 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-4">Leaderboards</h1>
+  <div class="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-4xl font-bold text-slate-900">🏆 Complete Leaderboards</h1>
+          <p class="text-slate-600 text-sm mt-2">View all player rankings across all stats</p>
+        </div>
+        <button 
+          @click="fetchAll"
+          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2 w-fit">
+          <span>↻</span> Refresh
+        </button>
+      </div>
+    </div>
 
-    <!-- Sort by clicking the column headers -->
+    <!-- Leaderboards Card -->
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+      <!-- Card Header -->
+      <div class="px-6 py-4 border-b border-slate-200 bg-linear-to-r from-slate-50 to-slate-100">
+        <h2 class="text-lg font-semibold text-slate-900">Player Rankings</h2>
+        <p class="text-sm text-slate-600 mt-1">Click column headers to sort</p>
+      </div>
 
-    <table class="w-full table-auto border-collapse">
-      <thead>
-        <tr class="text-left">
-          <th :class="headerClass('total')" @click="setSort('total')">Rank <span v-if="sortBy==='total'">{{ sortDir==='desc' ? '▼' : '▲' }}</span></th>
-          <th :class="headerClass('name')" @click="setSort('name')">Player <span v-if="sortBy==='name'">{{ sortDir==='desc' ? '▼' : '▲' }}</span></th>
-          <th :class="headerClass('wins')" @click="setSort('wins')">Wins <span v-if="sortBy==='wins'">{{ sortDir==='desc' ? '▼' : '▲' }}</span></th>
-          <th :class="headerClass('capotes')" @click="setSort('capotes')">Capotes <span v-if="sortBy==='capotes'">{{ sortDir==='desc' ? '▼' : '▲' }}</span></th>
-          <th :class="headerClass('flags')" @click="setSort('flags')">Flags <span v-if="sortBy==='flags'">{{ sortDir==='desc' ? '▼' : '▲' }}</span></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(p, idx) in pageItems" :key="p.user_id" class="border-t">
-          <td class="p-2">{{ displayRank(p, idx) }}</td>
-          <td class="p-2">{{ p.nickname || p.name || ('#' + p.user_id) }}</td>
-          <td class="p-2">{{ p.wins || 0 }}</td>
-          <td class="p-2">{{ p.capotes || 0 }}</td>
-          <td class="p-2">{{ p.flags || 0 }}</td>
-        </tr>
-      </tbody>
-    </table>
+      <!-- Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th :class="headerClass('total')" @click="setSort('total')" class="text-left">
+                <div class="flex items-center gap-2 cursor-pointer hover:text-slate-900">
+                  Rank
+                  <span v-if="sortBy==='total'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
+              <th :class="headerClass('name')" @click="setSort('name')" class="text-left">
+                <div class="flex items-center gap-2 cursor-pointer hover:text-slate-900">
+                  Player
+                  <span v-if="sortBy==='name'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
+              <th :class="headerClass('wins')" @click="setSort('wins')" class="text-center">
+                <div class="flex items-center justify-center gap-2 cursor-pointer hover:text-slate-900">
+                  ⭐ Wins
+                  <span v-if="sortBy==='wins'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
+              <th :class="headerClass('capotes')" @click="setSort('capotes')" class="text-center">
+                <div class="flex items-center justify-center gap-2 cursor-pointer hover:text-slate-900">
+                  🎯 Capotes
+                  <span v-if="sortBy==='capotes'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
+              <th :class="headerClass('flags')" @click="setSort('flags')" class="text-center">
+                <div class="flex items-center justify-center gap-2 cursor-pointer hover:text-slate-900">
+                  🏴 Flags
+                  <span v-if="sortBy==='flags'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
+              <th :class="headerClass('total')" class="text-center">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(p, idx) in pageItems" :key="p.user_id" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-full font-bold text-white text-sm"
+                    :class="{
+                      'bg-yellow-500': displayRank(p, idx) === 1,
+                      'bg-gray-400': displayRank(p, idx) === 2,
+                      'bg-orange-500': displayRank(p, idx) === 3,
+                      'bg-slate-400': displayRank(p, idx) > 3
+                    }">
+                    {{ displayRank(p, idx) }}
+                  </div>
+                  <span class="font-semibold text-slate-900">{{ displayRank(p, idx) === 1 ? '👑' : displayRank(p, idx) === 2 ? '🥈' : displayRank(p, idx) === 3 ? '🥉' : '' }}</span>
+                </div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="font-medium text-slate-900">{{ p.nickname || p.name || ('#' + p.user_id) }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="font-semibold text-indigo-600">{{ p.wins || 0 }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="font-semibold text-indigo-600">{{ p.capotes || 0 }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="font-semibold text-indigo-600">{{ p.flags || 0 }}</span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span class="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-full text-sm">{{ (p.wins || 0) + (p.capotes || 0) + (p.flags || 0) }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <div class="mt-4 flex items-center justify-between">
-      <div>Page {{ currentPage }} of {{ totalPages }}</div>
-      <div class="flex gap-2">
-        <button class="px-3 py-1 border rounded" @click="prevPage" :disabled="currentPage <= 1">Prev</button>
-        <button class="px-3 py-1 border rounded" @click="nextPage" :disabled="currentPage >= totalPages">Next</button>
+      <!-- Pagination -->
+      <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+        <div class="text-sm text-slate-600">
+          Page <span class="font-semibold">{{ currentPage }}</span> of <span class="font-semibold">{{ totalPages }}</span> 
+          <span class="text-xs text-slate-500 ml-4">({{ combined.length }} total players)</span>
+        </div>
+        <div class="flex gap-2">
+          <button 
+            @click="prevPage" 
+            :disabled="currentPage <= 1"
+            class="px-4 py-2 border border-slate-300 rounded-lg font-semibold text-sm transition-colors hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+            ← Previous
+          </button>
+          <button 
+            @click="nextPage" 
+            :disabled="currentPage >= totalPages"
+            class="px-4 py-2 border border-slate-300 rounded-lg font-semibold text-sm transition-colors hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed">
+            Next →
+          </button>
+        </div>
       </div>
     </div>
   </div>

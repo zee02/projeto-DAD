@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
+  <div class="min-h-screen bg-white flex items-center justify-center px-4">
     <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-6 text-center">Login</h1>
 
@@ -90,8 +90,14 @@ export default {
       try {
         const authStore = useAuthStore()
         await authStore.login(this.form)
-        // Redirect to home
-        this.$router.push('/')
+        
+        // Check if user is blocked and redirect to blocked page
+        if (authStore.user?.blocked === true) {
+          this.$router.push('/blocked')
+        } else {
+          // Redirect to home for non-blocked users
+          this.$router.push('/')
+        }
       } catch (error) {
         this.errors = getValidationErrors(error)
         this.errorMessage = getErrorMessage(error)
