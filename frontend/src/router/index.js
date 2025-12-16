@@ -138,10 +138,22 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-  path: '/singleplayer',
-  name: 'singleplayer',
-  component: () => import('@/pages/game/SinglePlayerGame.vue')
-  },
+      path: '/singleplayer',
+      name: 'singleplayer',
+      component: () => import('@/pages/game/SinglePlayerGame.vue')
+    },
+    {
+      path: '/multiplayer/lobby',
+      name: 'multiplayer-lobby',
+      component: () => import('@/pages/game/MultiplayerLobby.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/multiplayer/game/:gameId',
+      name: 'multiplayer-game',
+      component: () => import('@/pages/game/MultiplayerGame.vue'),
+      meta: { requiresAuth: true }
+    },
 
     {
       path: '/blocked',

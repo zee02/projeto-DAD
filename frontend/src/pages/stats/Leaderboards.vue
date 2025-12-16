@@ -8,7 +8,7 @@
           <p class="text-slate-600 text-sm mt-2">View all player rankings across all stats</p>
         </div>
         <button 
-          @click="fetchAll"
+          @click="() => { fetchAll(); searchQuery = '' }"
           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors flex items-center gap-2 w-fit">
           <span>↻</span> Refresh
         </button>
@@ -19,8 +19,22 @@
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <!-- Card Header -->
       <div class="px-6 py-4 border-b border-slate-200 bg-linear-to-r from-slate-50 to-slate-100">
-        <h2 class="text-lg font-semibold text-slate-900">Player Rankings</h2>
-        <p class="text-sm text-slate-600 mt-1">Click column headers to sort</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900">Player Rankings</h2>
+            <p class="text-sm text-slate-600 mt-1">Click column headers to sort</p>
+          </div>
+          <!-- Search Box -->
+          <div class="relative">
+            <input 
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search player name..."
+              class="pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent w-full sm:w-64"
+            />
+            <span class="absolute left-3 top-2.5 text-slate-400">🔍</span>
+          </div>
+        </div>
       </div>
 
       <!-- Table -->
@@ -58,7 +72,12 @@
                   <span v-if="sortBy==='flags'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
                 </div>
               </th>
-              <th :class="headerClass('total')" class="text-center">Total</th>
+              <th :class="headerClass('gamesPlayed')" @click="setSort('gamesPlayed')" class="text-center">
+                <div class="flex items-center justify-center gap-2 cursor-pointer hover:text-slate-900">
+                  🎮 Games Played
+                  <span v-if="sortBy==='gamesPlayed'" class="text-xs">{{ sortDir==='desc' ? '▼' : '▲' }}</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -90,7 +109,7 @@
                 <span class="font-semibold text-indigo-600">{{ p.flags || 0 }}</span>
               </td>
               <td class="px-6 py-4 text-center">
-                <span class="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-full text-sm">{{ (p.wins || 0) + (p.capotes || 0) + (p.flags || 0) }}</span>
+                <span class="font-bold text-slate-900 bg-slate-100 px-3 py-1 rounded-full text-sm">{{ p.gamesPlayed || 0 }}</span>
               </td>
             </tr>
           </tbody>
@@ -101,7 +120,7 @@
       <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
         <div class="text-sm text-slate-600">
           Page <span class="font-semibold">{{ currentPage }}</span> of <span class="font-semibold">{{ totalPages }}</span> 
-          <span class="text-xs text-slate-500 ml-4">({{ combined.length }} total players)</span>
+          <span class="text-xs text-slate-500 ml-4">({{ filteredCombined.length }} {{ searchQuery ? 'filtered' : 'total' }} players)</span>
         </div>
         <div class="flex gap-2">
           <button 
@@ -123,41 +142,54 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useAPIStore } from '@/stores/api'
 import { toast } from 'vue-sonner'
 
 const api = useAPIStore()
 const allMap = ref({})
 const combined = ref([])
-const sortBy = ref('wins')
+const sortBy = ref('gamesPlayed')
 const sortDir = ref('desc')
 const perPage = ref(25)
 const currentPage = ref(1)
+const searchQuery = ref('')
 
-const totalPages = computed(() => Math.max(1, Math.ceil(combined.value.length / perPage.value)))
-
-const pageItems = computed(() => {
-    const start = (currentPage.value - 1) * perPage.value
-  return combined.value.slice(start, start + perPage.value)
+const filteredCombined = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return combined.value
+  }
+  const query = searchQuery.value.toLowerCase().trim()
+  return combined.value.filter((player) => {
+    const name = (player.nickname || player.name || '').toLowerCase()
+    return name.includes(query)
+  })
 })
 
-const rankMaps = ref({ wins: {}, capotes: {}, flags: {}, total: {} })
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredCombined.value.length / perPage.value)))
+
+const pageItems = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value
+  return filteredCombined.value.slice(start, start + perPage.value)
+})
+
+// Reset to page 1 when search changes
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
+
+const rankMaps = ref({ wins: {}, capotes: {}, flags: {}, gamesPlayed: {} })
 
 const computeRankMaps = () => {
-  const keys = ['wins', 'capotes', 'flags', 'total']
+  const keys = ['wins', 'capotes', 'flags', 'gamesPlayed']
   keys.forEach((k) => {
     const arr = [...combined.value]
-    if (k === 'total') {
-      arr.sort((a, b) => (b.total || 0) - (a.total || 0))
-    } else {
-      arr.sort((a, b) => (b[k] || 0) - (a[k] || 0))
-    }
+    arr.sort((a, b) => (b[k] || 0) - (a[k] || 0))
     const map = {}
     let prevVal = null
     let prevRank = 0
     arr.forEach((it, idx) => {
-      const val = k === 'total' ? (it.total || 0) : (it[k] || 0)
+      const val = it[k] || 0
       if (prevVal !== null && val === prevVal) {
         // tie: same rank as previous
         map[it.user_id] = prevRank
@@ -177,10 +209,11 @@ const fetchAll = async () => {
   try {
     // fetch top N from each leaderboard and merge locally
     const per = 200
-    const [wRes, cRes, fRes] = await Promise.all([
+    const [wRes, cRes, fRes, gRes] = await Promise.all([
       api.getLeaderboards('wins', 1, per),
       api.getLeaderboards('capotes', 1, per),
       api.getLeaderboards('flags', 1, per),
+      api.getLeaderboards('games-played', 1, per),
     ])
 
     const map = {}
@@ -197,6 +230,7 @@ const fetchAll = async () => {
     ingest(wRes.data.data, 'wins')
     ingest(cRes.data.data, 'capotes')
     ingest(fRes.data.data, 'flags')
+    ingest(gRes.data.data, 'gamesPlayed')
 
     // compute totals and convert to array
     const arr = Object.values(map)
@@ -204,7 +238,7 @@ const fetchAll = async () => {
       it.wins = it.wins || 0
       it.capotes = it.capotes || 0
       it.flags = it.flags || 0
-      it.total = it.wins + it.capotes + it.flags
+      it.gamesPlayed = it.gamesPlayed || 0
     })
     combined.value = arr
     // compute rank mappings (1 = most)
@@ -257,7 +291,7 @@ const nextPage = () => {
 
 const displayRank = (user, idx) => {
   const key = sortBy.value
-  if (['wins', 'capotes', 'flags', 'total'].includes(key)) {
+  if (['wins', 'capotes', 'flags', 'gamesPlayed'].includes(key)) {
     const map = rankMaps.value[key] || {}
     return map[user.user_id] || ((currentPage.value - 1) * perPage.value + idx + 1)
   }

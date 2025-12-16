@@ -57,7 +57,7 @@ const logout = () => {
 }
 
 onMounted(() => {
-  socketStore.handleConnection()
+  socketStore.connect()
 })
 
 

@@ -155,6 +155,20 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/stats/anonymous`, { params: { days } })
   }
 
+  // Multiplayer Matches
+  const postSaveMatch = async (matchData) => {
+    const response = await axios.post(`${API_BASE_URL}/matches`, matchData)
+    return response.data
+  }
+
+  const getMyMatches = (page = 1, per_page = 15) => {
+    return axios.get(`${API_BASE_URL}/matches/my-matches`, { params: { page, per_page } })
+  }
+
+  const getMatchStats = () => {
+    return axios.get(`${API_BASE_URL}/matches/stats`)
+  }
+
   // Admin analytics
   const getAdminSalesOverTime = (days = 30) => {
     return axios.get(`${API_BASE_URL}/admin/analytics/sales`, { params: { days } })
@@ -191,6 +205,10 @@ export const useAPIStore = defineStore('api', () => {
     getMyGames,
     getOverviewStats,
     getAnonymousStats,
+    // Multiplayer matches
+    postSaveMatch,
+    getMyMatches,
+    getMatchStats,
     // Admin analytics
     getAdminSalesOverTime,
     getAdminGamesOverTime,

@@ -1,5 +1,387 @@
+/**
+ * Event handlers para WebSocket
+ * Gerencia lobby, jogo, apostas e timers
+ */
+
+import { LobbyManager } from '../state/lobbyManager.js';
+import { GameManager } from '../state/gameManager.js';
+import { BettingManager } from '../state/matchManager.js';
+
+// Instâncias globais
+const lobbyManager = new LobbyManager();
+const gameManager = new GameManager();
+const bettingManager = new BettingManager();
+
+// Timer tracking
+const turnTimers = new Map(); // gameId -> timeoutId
+
 export const handleConnectionEvents = (io, socket) => {
-  socket.on("echo", (msg) => {
-    socket.emit("echo", msg);
+  console.log(`[${socket.id}] Connected`);
+
+  // ========== LOBBY EVENTS ==========
+
+  /**
+   * Player entrar na lobby (esperar por oponente)
+   * payload: { userId, gameType: '3'|'9', betAmount: 2 }
+   */
+  socket.on('lobby:join', (payload) => {
+    console.log(`[${socket.id}] Joining lobby:`, payload);
+
+    const { userId, gameType, betAmount } = payload;
+    if (!userId || !gameType || betAmount === undefined) {
+      socket.emit('error', {
+        message: 'Invalid payload for lobby:join',
+      });
+      return;
+    }
+
+    try {
+      // Player entra no lobby
+      const result = lobbyManager.joinLobby(
+        userId,
+        socket.id,
+        gameType,
+        betAmount
+      );
+
+      socket.join(`lobby_${gameType}_${betAmount}`);
+      socket.data.userId = userId;
+      socket.data.gameType = gameType;
+      socket.data.betAmount = betAmount;
+
+      if (result.status === 'waiting') {
+        // Primeiro player a esperar
+        socket.emit('lobby:waiting', {
+          lobbyId: result.lobbyId,
+          message: 'Waiting for opponent...',
+        });
+
+        // Notificar outros players na lobby que há uma vaga
+        socket
+          .to(`lobby_${gameType}_${betAmount}`)
+          .emit('lobby:available', {
+            lobbyId: result.lobbyId,
+          });
+      } else if (result.status === 'ready') {
+        // 2º player chegou - jogo pronto!
+        const lobby = result.lobby;
+
+        // Criar Match (série de jogos)
+        const match = bettingManager.createMatch(
+          lobby.player1,
+          lobby.player2,
+          betAmount
+        );
+
+        // Criar primeiro Game
+        const gameId = `game_${lobby.id}_1`;
+        const game = gameManager.startGame(
+          gameId,
+          lobby.player1,
+          lobby.player2,
+          gameType,
+          betAmount
+        );
+
+        bettingManager.linkGameToMatch(gameId, match.id);
+
+        // Notificar ambos players
+        const gameStatePayload = gameManager.getGameState(gameId);
+        console.log(
+          `[Lobby] Emitting game:start to player1 (${lobby.player1.socketId}):`,
+          { gameId, matchId: match.id, gameState: gameStatePayload }
+        );
+
+        io.to(lobby.player1.socketId).emit('game:start', {
+          gameId,
+          matchId: match.id,
+          gameState: gameStatePayload,
+          opponentUserId: lobby.player2.userId,
+          betAmount,
+          gameType,
+        });
+
+        io.to(lobby.player2.socketId).emit('game:start', {
+          gameId,
+          matchId: match.id,
+          gameState: gameStatePayload,
+          opponentUserId: lobby.player1.userId,
+          betAmount,
+          gameType,
+        });
+
+        // Iniciar timer para o primeiro player
+        const firstPlayer = game.currentPlayer;
+        if (firstPlayer === 'player1') {
+          startTurnTimer(io, gameId, lobby.player1.socketId);
+        } else {
+          startTurnTimer(io, gameId, lobby.player2.socketId);
+        }
+
+        console.log(`[Lobby] Game started: ${gameId}, Match: ${match.id}`);
+      }
+    } catch (error) {
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  /**
+   * Player sair da lobby
+   */
+  socket.on('lobby:leave', () => {
+    console.log(`[${socket.id}] Leaving lobby`);
+
+    const userId = socket.data.userId;
+    if (!userId) return;
+
+    try {
+      const result = lobbyManager.leaveLobby(userId);
+      socket.emit('lobby:left', result);
+      socket.leave(
+        `lobby_${socket.data.gameType}_${socket.data.betAmount}`
+      );
+    } catch (error) {
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  // ========== GAME EVENTS ==========
+
+  /**
+   * Player jogar uma carta
+   * payload: { gameId, cardId }
+   */
+  socket.on('game:play_card', (payload) => {
+    const { gameId, cardId } = payload;
+    const userId = socket.data.userId;
+
+    console.log(
+      `[${socket.id}] Playing card: ${cardId} in game ${gameId}`
+    );
+
+    try {
+      const result = gameManager.playCard(gameId, userId, cardId);
+
+      if (result.status === 'success') {
+        const gameState = result.gameState;
+        const game = gameManager.getGame(gameId);
+
+        // Enviar novo estado para ambos players
+        const lobby = lobbyManager.getLobby(
+          gameId.split('_')[1]
+        );
+        // Encontrar IDs dos players
+        const player1Socket = game.player1.socketId;
+        const player2Socket = game.player2.socketId;
+
+        io.to(player1Socket)
+          .to(player2Socket)
+          .emit('game:state_update', gameState);
+
+        // Se jogo acabou
+        if (gameState.status === 'finished') {
+          handleGameEnd(io, gameId);
+        } else {
+          // Ajustar timer para o próximo player
+          clearTimeout(turnTimers.get(gameId));
+          const nextPlayer = game.currentPlayer;
+          const nextPlayerSocket =
+            nextPlayer === 'player1' ? player1Socket : player2Socket;
+          startTurnTimer(io, gameId, nextPlayerSocket);
+        }
+      } else if (result.status === 'timeout') {
+        // Player perdeu por timeout
+        handlePlayerTimeout(io, gameId, userId);
+      } else {
+        socket.emit('game:error', {
+          message: result.message,
+        });
+      }
+    } catch (error) {
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  /**
+   * Player desistir do jogo
+   */
+  socket.on('game:surrender', (payload) => {
+    const { gameId } = payload;
+    const userId = socket.data.userId;
+
+    console.log(`[${socket.id}] Surrendering from game ${gameId}`);
+
+    try {
+      const result = gameManager.surrender(gameId, userId);
+
+      if (result.status === 'surrendered') {
+        const game = gameManager.getGame(gameId);
+        const match = bettingManager.getMatchForGame(gameId);
+
+        // Registrar resultado na partida
+        if (match) {
+          const winner = result.winner.userId === game.player1.userId ? 'player1' : 'player2';
+          bettingManager.recordSurrender(match.id, userId);
+        }
+
+        // Notificar ambos players
+        io.to(game.player1.socketId)
+          .to(game.player2.socketId)
+          .emit('game:surrendered', {
+            gameId,
+            surrenderedBy: userId,
+            winner: result.winner.userId,
+          });
+
+        clearTimeout(turnTimers.get(gameId));
+        handleGameEnd(io, gameId);
+      }
+    } catch (error) {
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  /**
+   * Player desconectar (contar como desistência)
+   */
+  socket.on('disconnect', () => {
+    console.log(`[${socket.id}] Disconnected`);
+
+    const userId = socket.data.userId;
+    if (!userId) return;
+
+    // Se player estava em lobby
+    const lobby = lobbyManager.getPlayerLobby(userId);
+    if (lobby) {
+      lobbyManager.leaveLobby(userId);
+      console.log(`[Lobby] Player ${userId} left lobby`);
+    }
+
+    // Se player estava em game
+    const game = gameManager.getPlayerGame(userId);
+    if (game) {
+      // Player perdeu por desconexão
+      handlePlayerDisconnect(io, game.id, userId);
+      console.log(`[Game] Player ${userId} disconnected from game`);
+    }
   });
 };
+
+/**
+ * Iniciar timer de turno (20 segundos)
+ */
+function startTurnTimer(io, gameId, playerSocketId) {
+  const game = gameManager.getGame(gameId);
+  if (!game) return;
+
+  const timeoutId = setTimeout(() => {
+    const timeoutCheck = gameManager.checkTurnTimeout(gameId);
+    if (timeoutCheck) {
+      console.log(`[Game] ${gameId} - Timeout by player`);
+
+      // Notificar ambos
+      io.to(game.player1.socketId)
+        .to(game.player2.socketId)
+        .emit('game:timeout', {
+          gameId,
+          winner: timeoutCheck.winner.userId,
+          loser: timeoutCheck.loser.userId,
+        });
+
+      handleGameEnd(io, gameId);
+    }
+  }, game.turnTimeLimit);
+
+  turnTimers.set(gameId, timeoutId);
+}
+
+/**
+ * Processar timeout do player
+ */
+function handlePlayerTimeout(io, gameId, userId) {
+  const game = gameManager.getGame(gameId);
+  if (!game) return;
+
+  gameManager.surrender(gameId, userId);
+
+  io.to(game.player1.socketId)
+    .to(game.player2.socketId)
+    .emit('game:timeout', {
+      gameId,
+      timedOutUserId: userId,
+    });
+
+  clearTimeout(turnTimers.get(gameId));
+  handleGameEnd(io, gameId);
+}
+
+/**
+ * Processar desconexão de player
+ */
+function handlePlayerDisconnect(io, gameId, userId) {
+  const game = gameManager.getGame(gameId);
+  if (!game) return;
+
+  const opponentSocketId =
+    game.player1.userId === userId
+      ? game.player2.socketId
+      : game.player1.socketId;
+
+  io.to(opponentSocketId).emit('game:opponent_disconnected', {
+    gameId,
+    opponentUserId: userId,
+  });
+
+  gameManager.removeGame(gameId);
+  clearTimeout(turnTimers.get(gameId));
+}
+
+/**
+ * Processar fim de jogo
+ */
+function handleGameEnd(io, gameId) {
+  const game = gameManager.getGame(gameId);
+  if (!game) return;
+
+  const match = bettingManager.getMatchForGame(gameId);
+  if (match) {
+    const winner = game.winner === 'player1' ? 'player1' : 'player2';
+    const scores = {
+      player1: game.player1.score,
+      player2: game.player2.score,
+    };
+
+    const matchResult = bettingManager.recordGameResult(
+      match.id,
+      gameId,
+      winner,
+      scores
+    );
+
+    // Notificar resultado do match
+    io.to(game.player1.socketId)
+      .to(game.player2.socketId)
+      .emit('match:game_result', {
+        gameId,
+        winner: game[winner],
+        scores,
+        match: matchResult.match,
+      });
+
+    // Se match acabou
+    if (matchResult.match.status === 'finished') {
+      io.to(game.player1.socketId)
+        .to(game.player2.socketId)
+        .emit('match:finished', {
+          matchId: match.id,
+          winner: matchResult.match.winner,
+          totalCoinsWon: matchResult.winnerCoins,
+          totalBet: matchResult.totalBet,
+          match: matchResult.match,
+        });
+    }
+  }
+
+  gameManager.removeGame(gameId);
+  clearTimeout(turnTimers.get(gameId));
+}

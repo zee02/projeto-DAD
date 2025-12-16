@@ -74,10 +74,12 @@ const startSingleplayer = (mode) => {
   router.push({ name: 'singleplayer', query: { mode } })
 }
 
-
+const startMultiplayer = (mode) => {
+  router.push({ name: 'multiplayer-lobby', query: { mode } })
+}
 
 const goToMultiplayer = () => {
-  router.push({ name: 'multiplayer' })
+  router.push({ name: 'multiplayer-lobby' })
 }
 
 const goToHistory = () => {

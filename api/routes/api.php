@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CoinPurchaseController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\MatchController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::apiResource('games', GameController::class);
+
+// Multiplayer match routes (authenticated)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/matches', [MatchController::class, 'store']);
+    Route::get('/matches/my-matches', [MatchController::class, 'playerMatches']);
+    Route::get('/matches/stats', [MatchController::class, 'playerStats']);
+});
 
 // Public stats and leaderboards
 Route::get('/leaderboards/wins', [\App\Http\Controllers\StatsController::class, 'leaderboardWins']);
