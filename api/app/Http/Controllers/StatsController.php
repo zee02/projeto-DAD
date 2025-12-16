@@ -153,6 +153,69 @@ class StatsController extends Controller
         ]);
     }
 
+    public function leaderboardGamesPlayed(Request $request)
+    {
+        $perPage = (int) $request->input('per_page', 25);
+        $page = (int) $request->input('page', 1);
+
+        // Count total games for each user (as player1 or player2)
+        // Use UNION to count both player1 and player2 games
+        $counts = [];
+        
+        // Count as player1
+        $player1Games = DB::table('games')
+            ->select('player1_user_id as user_id', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('player1_user_id')
+            ->groupBy('player1_user_id')
+            ->get();
+        
+        foreach ($player1Games as $row) {
+            $counts[$row->user_id] = ($counts[$row->user_id] ?? 0) + $row->total;
+        }
+        
+        // Count as player2
+        $player2Games = DB::table('games')
+            ->select('player2_user_id as user_id', DB::raw('COUNT(*) as total'))
+            ->whereNotNull('player2_user_id')
+            ->groupBy('player2_user_id')
+            ->get();
+        
+        foreach ($player2Games as $row) {
+            $counts[$row->user_id] = ($counts[$row->user_id] ?? 0) + $row->total;
+        }
+
+        // Sort by count descending
+        arsort($counts);
+
+        // Paginate manually
+        $items = array_slice(array_map(function ($id, $count) {
+            return ['user_id' => $id, 'count' => $count];
+        }, array_keys($counts), $counts), ($page - 1) * $perPage, $perPage);
+
+        $userIds = array_column($items, 'user_id');
+        $users = User::whereIn('id', $userIds)->get()->keyBy('id');
+
+        $data = array_map(function ($row) use ($users) {
+            $u = $users[$row['user_id']] ?? null;
+            return [
+                'user_id' => $row['user_id'],
+                'name' => $u?->name,
+                'nickname' => $u?->nickname,
+                'photo_avatar_filename' => $u?->photo_avatar_filename,
+                'count' => (int) $row['count'],
+            ];
+        }, $items);
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => count($counts),
+            ],
+        ]);
+    }
+
     // Admin analytics (protected by EnsureAdmin middleware)
     public function salesOverTime(Request $request)
     {

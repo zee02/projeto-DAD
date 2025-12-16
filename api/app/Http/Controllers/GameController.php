@@ -58,7 +58,29 @@ class GameController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'type' => 'required|in:3,9',
+            'player1_user_id' => 'nullable|exists:users,id',
+            'player2_user_id' => 'nullable|exists:users,id',
+            'is_draw' => 'boolean',
+            'winner_user_id' => 'nullable|exists:users,id',
+            'loser_user_id' => 'nullable|exists:users,id',
+            'began_at' => 'required|date',
+            'ended_at' => 'required|date',
+            'total_time' => 'required|numeric',
+            'player1_points' => 'required|integer',
+            'player2_points' => 'required|integer',
+            'custom' => 'nullable|array',
+        ]);
+
+        $validated['status'] = 'Ended';
+
+        $game = Game::create($validated);
+
+        return response()->json([
+            'message' => 'Game saved successfully',
+            'data' => $game
+        ], 201);
     }
 
     /**

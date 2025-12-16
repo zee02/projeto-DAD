@@ -53,5 +53,6 @@ Route::apiResource('games', GameController::class);
 Route::get('/leaderboards/wins', [\App\Http\Controllers\StatsController::class, 'leaderboardWins']);
 Route::get('/leaderboards/capotes', [\App\Http\Controllers\StatsController::class, 'leaderboardCapotes']);
 Route::get('/leaderboards/flags', [\App\Http\Controllers\StatsController::class, 'leaderboardFlags']);
+Route::get('/leaderboards/games-played', [\App\Http\Controllers\StatsController::class, 'leaderboardGamesPlayed']);
 Route::get('/stats/overview', [\App\Http\Controllers\StatsController::class, 'overview']);
 Route::get('/stats/anonymous', [\App\Http\Controllers\StatsController::class, 'anonymousStats']);
