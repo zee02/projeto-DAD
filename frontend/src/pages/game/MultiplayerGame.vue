@@ -114,6 +114,9 @@ let turnTimerInterval = null
 let countdownInterval = null
 let gameStartTime = null
 let lastUpdateTime = null
+const localCountdown = ref(20)
+const timeWarning = ref(null)
+const previousTurnTimeRemaining = ref(20000)
 
 // Local timer updater - counts down from server time
 const updateTurnTimer = () => {
