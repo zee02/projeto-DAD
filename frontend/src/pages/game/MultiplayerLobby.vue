@@ -132,12 +132,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 p-4">
+  <div class="min-h-screen bg-white p-4">
     <div class="max-w-md mx-auto">
       <!-- Header -->
       <div class="text-center mb-8 pt-8">
-        <h1 class="text-4xl font-bold text-white mb-2">Multiplayer Lobby</h1>
-        <p class="text-white/80">Find an opponent and play Bisca!</p>
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Multiplayer Lobby</h1>
+        <p class="text-gray-600">Find an opponent and play Bisca!</p>
       </div>
 
       <!-- Main Card -->
@@ -174,7 +174,7 @@ onBeforeUnmount(() => {
                 :class="[
                   'py-3 px-4 rounded-lg font-semibold transition',
                   gameType === type
-                    ? 'bg-purple-600 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
                 ]"
               >
@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
                 :class="[
                   'py-3 px-4 rounded-lg font-semibold transition',
                   selectedBet === bet
-                    ? 'bg-yellow-500 text-white shadow-lg'
+                    ? 'bg-blue-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
                 ]"
               >
@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
           <button
             @click="joinLobby"
             :disabled="isLoading || !isConnected"
-            class="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
+            class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-lg hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {{ isLoading ? 'Joining...' : 'Find Opponent' }}
           </button>
@@ -259,17 +259,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Info Card -->
-      <div class="mt-8 bg-white/10 backdrop-blur-md rounded-2xl p-6 text-white">
-        <h3 class="font-bold mb-3">🎮 How it works</h3>
-        <ul class="text-sm space-y-2">
-          <li>✓ Choose your game type and bet amount</li>
-          <li>✓ Get matched with another player</li>
-          <li>✓ Play best-of-4 series (Match)</li>
-          <li>✓ Win coins based on your bet</li>
-          <li>⚠️ 20 seconds per move or you lose!</li>
-        </ul>
-      </div>
     </div>
   </div>
 </template>
