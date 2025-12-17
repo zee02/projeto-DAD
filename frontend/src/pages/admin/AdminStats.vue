@@ -23,6 +23,46 @@
           </div>
         </div>
       </div>
+      <div class="col-span-full" v-if="summaryLoaded">
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Sales last 7d</div>
+            <div class="text-lg font-bold">€ {{ summary.sales_last_7_days.toFixed(2) }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Sales last 30d</div>
+            <div class="text-lg font-bold">€ {{ summary.sales_last_30_days.toFixed(2) }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Avg sales/day (30d)</div>
+            <div class="text-lg font-bold">€ {{ summary.avg_sales_per_day_30.toFixed(2) }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Games last 7d</div>
+            <div class="text-lg font-bold">{{ summary.games_last_7_days }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Games last 30d</div>
+            <div class="text-lg font-bold">{{ summary.games_last_30_days }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Avg games/day (30d)</div>
+            <div class="text-lg font-bold">{{ summary.avg_games_per_day_30 }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Active players (30d)</div>
+            <div class="text-lg font-bold">{{ summary.active_players_last_30 }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Blocked users</div>
+            <div class="text-lg font-bold">{{ summary.blocked_users }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow text-center">
+            <div class="text-sm text-gray-500">Avg game duration (s)</div>
+            <div class="text-lg font-bold">{{ summary.avg_game_duration_seconds }}</div>
+          </div>
+        </div>
+      </div>
       <div class="p-4 bg-white rounded shadow">
         <h2 class="font-semibold mb-2">Sales Over Time (EUR)</h2>
         <SimpleLineChart :labels="labels" :values="salesData" />
@@ -48,16 +88,31 @@ const salesData = ref([])
 const gamesData = ref([])
 const overview = ref({ total_players: 0, total_games: 0, total_transactions: 0, total_sales_euros: 0 })
 const overviewLoaded = ref(false)
+const summary = ref({
+  sales_last_7_days: 0,
+  sales_last_30_days: 0,
+  avg_sales_per_day_30: 0,
+  games_last_7_days: 0,
+  games_last_30_days: 0,
+  avg_games_per_day_30: 0,
+  active_players_last_30: 0,
+  blocked_users: 0,
+  avg_game_duration_seconds: 0,
+})
+const summaryLoaded = ref(false)
 
 const fetch = async () => {
   try {
-    const [sRes, gRes] = await Promise.all([
+    const [sRes, gRes, summaryRes] = await Promise.all([
       api.getAdminSalesOverTime(30),
       api.getAdminGamesOverTime(30),
+      api.getAdminAnalyticsSummary(),
     ])
     labels.value = sRes.data.labels
     salesData.value = sRes.data.data
     gamesData.value = gRes.data.data
+    summary.value = summaryRes.data
+    summaryLoaded.value = true
 
     // Try to load overview (aggregates)
     try {

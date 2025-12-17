@@ -48,6 +48,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/transactions', [\App\Http\Controllers\AdminController::class, 'transactions']);
             Route::get('/analytics/sales', [\App\Http\Controllers\StatsController::class, 'salesOverTime']);
             Route::get('/analytics/games', [\App\Http\Controllers\StatsController::class, 'gamesOverTime']);
+            Route::get('/analytics/summary', [\App\Http\Controllers\StatsController::class, 'adminSummary']);
         });
 });
 

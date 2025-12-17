@@ -178,6 +178,10 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/admin/analytics/games`, { params: { days } })
   }
 
+  const getAdminAnalyticsSummary = () => {
+    return axios.get(`${API_BASE_URL}/admin/analytics/summary`)
+  }
+
   return {
     postRegister,
     postLogin,
@@ -212,5 +216,7 @@ export const useAPIStore = defineStore('api', () => {
     // Admin analytics
     getAdminSalesOverTime,
     getAdminGamesOverTime,
+    getAdminAnalyticsSummary,
   }
 })
+

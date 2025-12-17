@@ -286,6 +286,44 @@ class StatsController extends Controller
         ]);
     }
 
+    // Admin summary metrics
+    public function adminSummary(Request $request)
+    {
+        $now = now();
+        $from7 = $now->copy()->subDays(6)->startOfDay(); // inclusive of today
+        $from30 = $now->copy()->subDays(29)->startOfDay();
+
+        $salesLast7 = CoinPurchase::where('purchase_datetime', '>=', $from7)->sum('euros');
+        $salesLast30 = CoinPurchase::where('purchase_datetime', '>=', $from30)->sum('euros');
+
+        $gamesLast7 = Game::whereNotNull('began_at')->where('began_at', '>=', $from7)->count();
+        $gamesLast30 = Game::whereNotNull('began_at')->where('began_at', '>=', $from30)->count();
+
+        // Active players in last 30 days
+        $recentGames = Game::whereNotNull('began_at')->where('began_at', '>=', $from30)
+            ->get(['player1_user_id', 'player2_user_id']);
+        $activeSet = [];
+        foreach ($recentGames as $g) {
+            if ($g->player1_user_id) $activeSet[$g->player1_user_id] = true;
+            if ($g->player2_user_id) $activeSet[$g->player2_user_id] = true;
+        }
+
+        $blockedUsers = User::where('blocked', true)->count();
+        $avgGameDuration = DB::table('games')->whereNotNull('total_time')->avg('total_time');
+
+        return response()->json([
+            'sales_last_7_days' => (float) $salesLast7,
+            'sales_last_30_days' => (float) $salesLast30,
+            'avg_sales_per_day_30' => round($salesLast30 / 30, 2),
+            'games_last_7_days' => (int) $gamesLast7,
+            'games_last_30_days' => (int) $gamesLast30,
+            'avg_games_per_day_30' => round($gamesLast30 / 30, 2),
+            'active_players_last_30' => count($activeSet),
+            'blocked_users' => (int) $blockedUsers,
+            'avg_game_duration_seconds' => $avgGameDuration ? round($avgGameDuration, 1) : 0,
+        ]);
+    }
+
     // Anonymous aggregated stats (no personal data)
     public function overview(Request $request)
     {
