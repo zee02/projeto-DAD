@@ -39,11 +39,14 @@ const joinLobby = async () => {
   try {
     socketStore.socket.emit('lobby:join', {
       userId: user.value.id,
+      name: user.value.name,
       gameType: gameType.value,
       betAmount: selectedBet.value,
     })
 
+    // reset and show immediate feedback
     waitingForOpponent.value = true
+    lobbyId.value = 'matching...'
     successMessage.value = `Waiting for opponent... (Bet: ${selectedBet.value} coins)`
   } catch (error) {
     errorMessage.value = error.message || 'Failed to join lobby'
@@ -67,11 +70,15 @@ onMounted(() => {
   }
 
   // Listening for game start
-  socketStore.socket.on('game:start', (payload) => {
+    socketStore.socket.on('game:start', (payload) => {
     console.log('Game started:', payload)
-    // Store the game state in socket store before routing
-    socketStore.lastGameStartPayload.value = payload
+    // Store the game state in socket store before routing (guarded)
+    if (socketStore.lastGameStartPayload) {
+      socketStore.lastGameStartPayload.value = payload
+    }
     leftLobby.value = true
+    waitingForOpponent.value = false
+    lobbyId.value = payload.gameId || lobbyId.value
     router.push({
       name: 'multiplayer-game',
       params: { gameId: payload.gameId },
@@ -87,20 +94,40 @@ onMounted(() => {
 
   // Listening for lobby status
   socketStore.socket.on('lobby:waiting', (payload) => {
-    lobbyId.value = payload.lobbyId
+    lobbyId.value = payload.lobbyId || lobbyId.value
+    waitingForOpponent.value = true
+    successMessage.value = `Waiting for opponent... (Bet: ${selectedBet.value} coins)`
     console.log('Waiting in lobby:', payload.lobbyId)
+  })
+
+  // Listening for opponent leaving lobby
+  socketStore.socket.on('lobby:player_left', (payload) => {
+    console.log('Opponent left lobby:', payload)
+    errorMessage.value = payload.message
+    waitingForOpponent.value = false
+    
+    // Auto close after 3 seconds
+    setTimeout(() => {
+      errorMessage.value = ''
+      router.push('/')
+    }, 3000)
   })
 })
 
 // Clean up on unmount
 onBeforeUnmount(() => {
-  if (waitingForOpponent.value && !leftLobby.value) {
+  if (
+    waitingForOpponent.value &&
+    !leftLobby.value &&
+    !socketStore.lastGameStartPayload.value
+  ) {
     cancelWaiting()
   }
 
   // Note: Don't remove game:start listener - it's managed by the socket store and needed by other components
   socketStore.socket.off('error')
   socketStore.socket.off('lobby:waiting')
+  socketStore.socket.off('lobby:player_left')
 })
 </script>
 

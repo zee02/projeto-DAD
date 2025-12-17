@@ -267,6 +267,7 @@ export class GameManager {
       ),
       player1: {
         userId: game.player1.userId,
+        name: game.player1.name,
         score: game.player1.score,
         marks: game.player1.marks,
         hand: engineState.player1Hand,
@@ -274,12 +275,13 @@ export class GameManager {
       },
       player2: {
         userId: game.player2.userId,
+        name: game.player2.name,
         score: game.player2.score,
         marks: game.player2.marks,
         hand: engineState.player2Hand,
         trickCount: engineState.player2Tricks.length,
       },
-      table: engineState.table,
+      table: engineState.table.map((c, idx) => ({ owner: idx === 0 ? 'player1' : 'player2', card: c })),
       trumpCard: engineState.trumpCard,
       deckRemaining: engineState.deck.length,
       winner: game.winner,

@@ -23,9 +23,87 @@ const gameType = ref('3')
 const gameMessage = ref('')
 const errorMessage = ref('')
 
+// UI/local state
+const selectedCard = ref(null)
+const isPlayingCard = ref(false)
+const gameFinished = ref(false)
+const gameResult = ref(null)
+const matchFinished = ref(false)
+const matchResult = ref(null)
+const showSurrenderConfirm = ref(false)
+
+// Notification system
+const notifications = ref([]) // Array of {id, type, message, icon, duration}
+let notificationIdCounter = 0
+
+const addNotification = (message, type = 'info', icon = '', duration = 3000) => {
+  const id = notificationIdCounter++
+  notifications.value.push({ id, type, message, icon, duration })
+  
+  if (duration > 0) {
+    setTimeout(() => {
+      notifications.value = notifications.value.filter(n => n.id !== id)
+    }, duration)
+  }
+  
+  return id
+}
+
+const removeNotification = (id) => {
+  notifications.value = notifications.value.filter(n => n.id !== id)
+}
+
+// Timer state
+const localCountdown = ref(20)
+const timeWarning = ref(null) // 'critical' (3s), 'warning' (5s), or null
+const previousTurnTimeRemaining = ref(20000)
+
+// Helpers to map player perspective
+const myOwner = computed(() => {
+  if (!gameState.value || !user.value) return 'player1'
+  return gameState.value.player1.userId === user.value.id ? 'player1' : 'player2'
+})
+
+const oppOwner = computed(() => (myOwner.value === 'player1' ? 'player2' : 'player1'))
+
+// Timer styling based on warning state
+const timerClasses = computed(() => {
+  if (timeWarning.value === 'critical') {
+    return 'text-red-600 animate-pulse'
+  } else if (timeWarning.value === 'warning') {
+    return 'text-orange-600'
+  }
+  return 'text-blue-600'
+})
+
 // Timer
 let turnTimerInterval = null
+let countdownInterval = null
 let gameStartTime = null
+let lastUpdateTime = null
+
+// Local timer updater - counts down from server time
+const updateTurnTimer = () => {
+  if (!gameState.value) return
+  
+  const now = Date.now()
+  const serverTime = gameState.value.turnTimeRemaining
+  
+  // Reset local countdown when server time changes significantly
+  if (Math.abs(serverTime - previousTurnTimeRemaining.value) > 100) {
+    localCountdown.value = Math.ceil(serverTime / 1000)
+    previousTurnTimeRemaining.value = serverTime
+  }
+  
+  // Update warning based on remaining time
+  if (serverTime <= 3000) {
+    timeWarning.value = 'critical'
+  } else if (serverTime <= 5000) {
+    timeWarning.value = 'warning'
+  } else {
+    timeWarning.value = null
+  }
+}
 
 // Computed
 const user = computed(() => authStore.user)
@@ -97,11 +175,6 @@ const deckRemaining = computed(() => {
   return gameState.value.deckRemaining
 })
 
-const turnTimeRemaining = computed(() => {
-  if (!gameState.value) return 20
-  return Math.ceil(gameState.value.turnTimeRemaining / 1000)
-})
-
 const suitSymbol = suit => SUIT_SYMBOL[suit] || '?'
 
 // Card image mapping
@@ -136,11 +209,18 @@ const playCard = (card) => {
 
 // Surrender
 const surrenderGame = () => {
-  if (confirm('Are you sure you want to surrender? You will lose this game.')) {
-    socketStore.socket.emit('game:surrender', {
-      gameId: gameId.value,
-    })
-  }
+  showSurrenderConfirm.value = true
+}
+
+const confirmSurrender = () => {
+  socketStore.socket.emit('game:surrender', {
+    gameId: gameId.value,
+  })
+  showSurrenderConfirm.value = false
+}
+
+const cancelSurrender = () => {
+  showSurrenderConfirm.value = false
 }
 
 // Go back to home
@@ -157,6 +237,9 @@ const deductCoinsAtGameStart = async () => {
       reason: `Multiplayer bet - ${gameType.value} cards, match ${matchId.value}`
     })
     console.log('Coins deducted:', betAmount.value)
+    
+    // Refrescar o user para atualizar moedas
+    await authStore.refreshUser()
   } catch (error) {
     console.error('Failed to deduct coins:', error)
     errorMessage.value = 'Failed to deduct coins. Please try again.'
@@ -172,6 +255,11 @@ const awardCoinsToWinner = async (winnerId, amount) => {
       reason: `Multiplayer game win - ${gameType.value} cards, match ${matchId.value}`
     })
     console.log('Coins awarded:', amount)
+    
+    // Se o vencedor somos nós, refrescar o user para atualizar moedas
+    if (winnerId === user.value.id) {
+      await authStore.refreshUser()
+    }
   } catch (error) {
     console.error('Failed to award coins:', error)
   }
@@ -207,12 +295,12 @@ const saveMatchToDatabase = async (payload) => {
 onMounted(() => {
   console.log('[MultiplayerGame] Mounted, gameId:', gameId.value)
   console.log('[MultiplayerGame] Socket connected:', socketStore.isConnected)
-  console.log('[MultiplayerGame] Last game:start payload:', socketStore.lastGameStartPayload.value)
+  console.log('[MultiplayerGame] Last game:start payload:', socketStore.lastGameStartPayload?.value)
   
   gameStartTime = Date.now()
 
   // Check if game:start payload already received (race condition handling)
-  if (socketStore.lastGameStartPayload.value) {
+  if (socketStore.lastGameStartPayload?.value) {
     console.log('[MultiplayerGame] Using stored game:start payload:', socketStore.lastGameStartPayload.value)
     const payload = socketStore.lastGameStartPayload.value
     gameId.value = payload.gameId
@@ -226,6 +314,11 @@ onMounted(() => {
     socketStore.lastGameStartPayload.value = null // Clear after using
   }
 
+  // Se não temos gameState ainda, pedir ao servidor o estado atual
+  if (!gameState.value && gameId.value) {
+    socketStore.socket.emit('game:request_state', { gameId: gameId.value })
+  }
+
   // Listening for game start
   socketStore.socket.on('game:start', (payload) => {
     console.log('[MultiplayerGame] Game started event received:', payload)
@@ -237,13 +330,17 @@ onMounted(() => {
     gameType.value = payload.gameType
     gameStartTime = Date.now()
     deductCoinsAtGameStart()
-    socketStore.lastGameStartPayload.value = null // Clear after using
+    if (socketStore.lastGameStartPayload) {
+      socketStore.lastGameStartPayload.value = null // Clear after using
+    }
   })
 
   // Listening for game state updates
   socketStore.socket.on('game:state_update', (state) => {
     console.log('Game state updated:', state)
+    
     gameState.value = state
+    previousTurnTimeRemaining.value = state.turnTimeRemaining
     selectedCard.value = null
     isPlayingCard.value = false
     updateTurnTimer()
@@ -255,6 +352,14 @@ onMounted(() => {
     console.log('Game finished:', payload)
     gameFinished.value = true
     gameResult.value = payload
+    
+    // Show notification only to relevant player
+    const isWinner = payload.winner === myOwner.value
+    if (isWinner) {
+      addNotification('🎉 You won this round!', 'success', '🏆', 3000)
+    } else {
+      addNotification('❌ You lost this round', 'info', '😔', 3000)
+    }
   })
 
   // Listening for match game result
@@ -269,8 +374,17 @@ onMounted(() => {
     console.log('Match finished:', payload)
     matchFinished.value = true
     matchResult.value = payload
+    
+    // Show notification only to relevant player
+    const isWinner = payload.winner === myOwner.value
+    if (isWinner) {
+      addNotification(`💰 You won the match! +${payload.winner === 'player1' ? payload.match.player1.coinsWon : payload.match.player2.coinsWon} coins`, 'success', '🏆', 4000)
+    } else {
+      addNotification(`Match finished`, 'info', '🎮', 3000)
+    }
+    
     gameMessage.value = `${
-      payload.winner === 'player1' ? 'Player 1' : 'Player 2'
+      payload.winner === myOwner.value ? 'You' : 'Opponent'
     } won the match!`
     
     // Award coins to winner
@@ -290,27 +404,31 @@ onMounted(() => {
   // Listening for timeout
   socketStore.socket.on('game:timeout', (payload) => {
     console.log('Game timeout:', payload)
-    errorMessage.value = `${
-      payload.winner === user.value.id ? 'You won! Opponent timed out' : 'You lost! Timed out'
-    }`
+    const isWinner = payload.winner === user.value.id
+    if (isWinner) {
+      addNotification('⏱️ Opponent timed out! You won!', 'success', '✅', 4000)
+    } else {
+      addNotification('⏱️ Time expired! You lost this round', 'error', '⏰', 3000)
+    }
     gameFinished.value = true
   })
 
   // Listening for opponent disconnect
   socketStore.socket.on('game:opponent_disconnected', (payload) => {
     console.log('Opponent disconnected:', payload)
-    errorMessage.value = 'Opponent disconnected. You won by default.'
+    addNotification('Opponent disconnected. You won by default!', 'success', '✅', 4000)
     gameFinished.value = true
   })
 
   // Listening for surrendered
   socketStore.socket.on('game:surrendered', (payload) => {
     console.log('Opponent surrendered:', payload)
-    errorMessage.value = `${
-      payload.winner === user.value.id
-        ? 'You won! Opponent surrendered'
-        : 'You surrendered'
-    }`
+    const isWinner = payload.winner === user.value.id
+    if (isWinner) {
+      addNotification('🏁 Opponent surrendered! You won!', 'success', '✅', 4000)
+    } else {
+      addNotification('Game ended', 'info', '🏁', 3000)
+    }
     gameFinished.value = true
   })
 
@@ -322,14 +440,39 @@ onMounted(() => {
     selectedCard.value = null
   })
 
-  // Start turn timer interval
+  // Start turn timer interval - update timer every 100ms
   turnTimerInterval = setInterval(updateTurnTimer, 100)
+  
+  // Local countdown interval - decrement visible countdown every second
+  countdownInterval = setInterval(() => {
+    if (gameState.value && gameState.value.turnTimeRemaining > 0) {
+      localCountdown.value = Math.ceil(gameState.value.turnTimeRemaining / 1000)
+    }
+  }, 1000)
 
   // Timeout para esperar gameState
   setTimeout(() => {
+    if (!gameState.value && socketStore.lastGameStartPayload?.value) {
+      // usar payload guardado se por alguma razão não foi aplicado
+      const payload = socketStore.lastGameStartPayload.value
+      gameId.value = payload.gameId
+      matchId.value = payload.matchId
+      gameState.value = payload.gameState
+      opponentUserId.value = payload.opponentUserId
+      betAmount.value = payload.betAmount
+      gameType.value = payload.gameType
+      gameStartTime = Date.now()
+      deductCoinsAtGameStart()
+      socketStore.lastGameStartPayload.value = null
+    }
+
     if (!gameState.value) {
+      // Tentar de novo pedir estado
+      if (gameId.value) {
+        socketStore.socket.emit('game:request_state', { gameId: gameId.value })
+      }
       console.error('[MultiplayerGame] Timeout waiting for gameState')
-      console.error('[MultiplayerGame] lastGameStartPayload:', socketStore.lastGameStartPayload.value)
+      console.error('[MultiplayerGame] lastGameStartPayload:', socketStore.lastGameStartPayload?.value)
       console.error('[MultiplayerGame] gameId:', gameId.value)
       console.error('[MultiplayerGame] socket connected:', socketStore.isConnected)
       errorMessage.value = 'Failed to load game. Please refresh.'
@@ -341,6 +484,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (turnTimerInterval) {
     clearInterval(turnTimerInterval)
+  }
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
   }
 
   socketStore.socket.off('game:start')
@@ -366,6 +512,29 @@ const continueToNextGame = () => {
 
 <template>
   <div v-if="gameState" class="min-h-screen bg-slate-100 flex flex-col items-center py-8 px-4">
+    <!-- Notification System -->
+    <div class="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-3 max-w-md">
+      <transition-group name="notification" tag="div" class="flex flex-col gap-3">
+        <div
+          v-for="notif in notifications"
+          :key="notif.id"
+          :class="[
+            'px-6 py-4 rounded-xl shadow-2xl backdrop-blur-sm text-white font-semibold text-center cursor-pointer hover:shadow-3xl transition-all',
+            notif.type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' :
+            notif.type === 'error' ? 'bg-gradient-to-r from-red-500 to-rose-600' :
+            notif.type === 'warning' ? 'bg-gradient-to-r from-yellow-500 to-orange-600' :
+            'bg-gradient-to-r from-blue-500 to-indigo-600'
+          ]"
+          @click="removeNotification(notif.id)"
+        >
+          <div class="flex items-center gap-3 justify-center">
+            <span class="text-2xl">{{ notif.icon }}</span>
+            <span>{{ notif.message }}</span>
+          </div>
+        </div>
+      </transition-group>
+    </div>
+
     <div class="w-full max-w-5xl bg-white shadow-xl rounded-2xl p-6 flex flex-col gap-4">
       <!-- Header -->
       <div class="flex items-center justify-between mb-2">
@@ -416,14 +585,28 @@ const continueToNextGame = () => {
           <div class="font-semibold mb-1">Opponent Score</div>
           <p>Points: <span class="font-medium">{{ opponentScore }}</span></p>
           <p>Tricks: <span class="font-medium">{{ opponentTricks }}</span></p>
-          <p class="mt-1 text-gray-500">User #{{ opponentUserId }}</p>
+          <p class="mt-1 text-gray-500">{{ opponentInfo?.name || `User #${opponentInfo?.userId}` }}</p>
         </div>
       </div>
 
       <!-- Turn Timer -->
-      <div class="text-center py-3 bg-blue-50 rounded-lg">
-        <div class="text-3xl font-bold text-blue-600">{{ turnTimeRemaining }}s</div>
-        <div class="text-sm text-gray-600">Time remaining for current turn</div>
+      <div class="text-center py-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 relative overflow-hidden">
+        <div :class="['text-5xl font-black transition-all duration-300', timerClasses]">
+          {{ localCountdown }}s
+        </div>
+        <div :class="['text-sm font-semibold transition-colors', timeWarning === 'critical' ? 'text-red-600' : timeWarning === 'warning' ? 'text-orange-600' : 'text-gray-600']">
+          {{ timeWarning === 'critical' ? '⏰ Time running out!' : timeWarning === 'warning' ? '⚠️ Hurry up!' : 'Time remaining for current turn' }}
+        </div>
+        <!-- Progress bar -->
+        <div class="mt-2 h-1 bg-gray-300 rounded-full overflow-hidden">
+          <div
+            class="h-full transition-all"
+            :class="timeWarning === 'critical' ? 'bg-red-500' : timeWarning === 'warning' ? 'bg-orange-500' : 'bg-blue-500'"
+            :style="{
+              width: `${Math.max(0, Math.min(100, (gameState?.turnTimeRemaining / 20000) * 100))}%`
+            }"
+          ></div>
+        </div>
       </div>
 
       <!-- Mesa (cartas jogadas) -->
@@ -451,11 +634,11 @@ const continueToNextGame = () => {
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">Opponent</span>
               <div
-                v-if="gameState.table.find(p => p.owner === 'player2')"
+                v-if="gameState.table.find(p => p.owner === oppOwner)"
                 class="w-20 h-28 overflow-hidden shadow"
               >
                 <img
-                  :src="getCardImagePath(gameState.table.find(p => p.owner === 'player2').card)"
+                  :src="getCardImagePath(gameState.table.find(p => p.owner === oppOwner).card)"
                   :alt="`Card`"
                   class="w-full h-full object-cover"
                 />
@@ -466,11 +649,11 @@ const continueToNextGame = () => {
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">You</span>
               <div
-                v-if="gameState.table.find(p => p.owner === 'player1')"
+                v-if="gameState.table.find(p => p.owner === myOwner)"
                 class="w-20 h-28 overflow-hidden shadow"
               >
                 <img
-                  :src="getCardImagePath(gameState.table.find(p => p.owner === 'player1').card)"
+                  :src="getCardImagePath(gameState.table.find(p => p.owner === myOwner).card)"
                   :alt="`Card`"
                   class="w-full h-full object-cover"
                 />
@@ -544,9 +727,9 @@ const continueToNextGame = () => {
         <h2 class="text-3xl font-bold text-gray-900">Match Finished! 🏆</h2>
         <p class="text-xl text-gray-600">
           {{
-            matchResult.winner === 'player1'
-              ? (gameState.player1.userId === user.id ? 'You won!' : 'You lost!')
-              : (gameState.player2.userId === user.id ? 'You won!' : 'You lost!')
+            matchResult.winner === myOwner
+              ? 'You won!'
+              : 'You lost!'
           }}
         </p>
         <p class="text-2xl font-bold text-yellow-600">
@@ -558,6 +741,34 @@ const continueToNextGame = () => {
         >
           Back to Home
         </button>
+      </div>
+    </div>
+
+    <!-- Surrender Confirmation Modal -->
+    <div
+      v-if="showSurrenderConfirm"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
+        <h2 class="text-3xl font-bold text-gray-900">Surrender Game?</h2>
+        <div class="text-lg text-gray-700 space-y-2">
+          <p>Are you sure you want to surrender?</p>
+          <p class="text-red-600 font-bold text-2xl">You will lose {{ betAmount }} coins 💰</p>
+        </div>
+        <div class="flex gap-3">
+          <button
+            @click="cancelSurrender"
+            class="flex-1 py-3 px-4 bg-gray-300 text-gray-900 font-bold rounded-lg hover:bg-gray-400 transition"
+          >
+            Cancel
+          </button>
+          <button
+            @click="confirmSurrender"
+            class="flex-1 py-3 px-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold rounded-lg hover:from-red-600 hover:to-red-700 transition"
+          >
+            Surrender
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -574,3 +785,24 @@ const continueToNextGame = () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s ease;
+}
+
+.notification-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.notification-leave-to {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.notification-move {
+  transition: transform 0.3s ease;
+}
+</style>

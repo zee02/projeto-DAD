@@ -13,7 +13,7 @@ export class LobbyManager {
   /**
    * Cria um novo lobby ou coloca player num lobby existente
    */
-  joinLobby(userId, socketId, gameType = "bisca", betAmount = 2) {
+  joinLobby(userId, name, socketId, gameType = "bisca", betAmount = 2) {
     // Se player já está num lobby, sair do anterior
     if (this.playerLobbys.has(userId)) {
       this.leaveLobby(userId);
@@ -29,7 +29,7 @@ export class LobbyManager {
 
     if (availableLobby) {
       // Player 2 entra num lobby existente
-      availableLobby.player2 = { userId, socketId };
+      availableLobby.player2 = { userId, name, socketId };
       this.playerLobbys.set(userId, availableLobby.id);
       return {
         status: "ready",
@@ -41,7 +41,7 @@ export class LobbyManager {
       const lobbyId = `lobby_${++this.lobbyCounter}`;
       const newLobby = {
         id: lobbyId,
-        player1: { userId, socketId },
+        player1: { userId, name, socketId },
         player2: null,
         gameType,
         betAmount,
@@ -96,6 +96,25 @@ export class LobbyManager {
   getPlayerLobby(userId) {
     const lobbyId = this.playerLobbys.get(userId);
     return lobbyId ? this.lobbys.get(lobbyId) : null;
+  }
+
+  /**
+   * Remover lobby (quando jogo começa)
+   */
+  removeLobby(lobbyId) {
+    const lobby = this.lobbys.get(lobbyId);
+    if (!lobby) return;
+
+    // Remover ambos players do mapeamento
+    if (lobby.player1) {
+      this.playerLobbys.delete(lobby.player1.userId);
+    }
+    if (lobby.player2) {
+      this.playerLobbys.delete(lobby.player2.userId);
+    }
+
+    // Remover lobby
+    this.lobbys.delete(lobbyId);
   }
 
   /**

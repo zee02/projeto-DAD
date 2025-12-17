@@ -14,6 +14,7 @@ const bettingManager = new BettingManager();
 
 // Timer tracking
 const turnTimers = new Map(); // gameId -> timeoutId
+const stateUpdateIntervals = new Map(); // gameId -> intervalId
 
 export const handleConnectionEvents = (io, socket) => {
   console.log(`[${socket.id}] Connected`);
@@ -22,12 +23,12 @@ export const handleConnectionEvents = (io, socket) => {
 
   /**
    * Player entrar na lobby (esperar por oponente)
-   * payload: { userId, gameType: '3'|'9', betAmount: 2 }
+   * payload: { userId, name, gameType: '3'|'9', betAmount: 2 }
    */
   socket.on('lobby:join', (payload) => {
     console.log(`[${socket.id}] Joining lobby:`, payload);
 
-    const { userId, gameType, betAmount } = payload;
+    const { userId, name, gameType, betAmount } = payload;
     if (!userId || !gameType || betAmount === undefined) {
       socket.emit('error', {
         message: 'Invalid payload for lobby:join',
@@ -39,6 +40,7 @@ export const handleConnectionEvents = (io, socket) => {
       // Player entra no lobby
       const result = lobbyManager.joinLobby(
         userId,
+        name,
         socket.id,
         gameType,
         betAmount
@@ -84,6 +86,9 @@ export const handleConnectionEvents = (io, socket) => {
         );
 
         bettingManager.linkGameToMatch(gameId, match.id);
+
+        // Remover lobby do Map já que o jogo começou
+        lobbyManager.removeLobby(lobby.id);
 
         // Notificar ambos players
         const gameStatePayload = gameManager.getGameState(gameId);
@@ -137,6 +142,15 @@ export const handleConnectionEvents = (io, socket) => {
     try {
       const result = lobbyManager.leaveLobby(userId);
       socket.emit('lobby:left', result);
+      
+      // Notificar outros players na sala que um player saiu
+      const gameType = socket.data.gameType;
+      const betAmount = socket.data.betAmount;
+      io.to(`lobby_${gameType}_${betAmount}`).emit('lobby:player_left', {
+        userId,
+        message: 'Opponent left the lobby'
+      });
+      
       socket.leave(
         `lobby_${socket.data.gameType}_${socket.data.betAmount}`
       );
@@ -146,6 +160,26 @@ export const handleConnectionEvents = (io, socket) => {
   });
 
   // ========== GAME EVENTS ==========
+
+  /**
+   * Cliente pede estado atual do jogo (re-sync ao abrir página)
+   * payload: { gameId }
+   */
+  socket.on('game:request_state', (payload) => {
+    const { gameId } = payload || {}
+    if (!gameId) {
+      socket.emit('game:error', { message: 'Missing gameId in request_state' })
+      return
+    }
+
+    const state = gameManager.getGameState(gameId)
+    if (!state) {
+      socket.emit('game:error', { message: `Game ${gameId} not found` })
+      return
+    }
+
+    socket.emit('game:state_update', state)
+  })
 
   /**
    * Player jogar uma carta
@@ -254,7 +288,16 @@ export const handleConnectionEvents = (io, socket) => {
     const lobby = lobbyManager.getPlayerLobby(userId);
     if (lobby) {
       lobbyManager.leaveLobby(userId);
-      console.log(`[Lobby] Player ${userId} left lobby`);
+      
+      // Notificar outros players na sala que um player saiu
+      const gameType = socket.data.gameType;
+      const betAmount = socket.data.betAmount;
+      io.to(`lobby_${gameType}_${betAmount}`).emit('lobby:player_left', {
+        userId,
+        message: 'Opponent disconnected and left the lobby'
+      });
+      
+      console.log(`[Lobby] Player ${userId} left lobby due to disconnect`);
     }
 
     // Se player estava em game
@@ -274,10 +317,21 @@ function startTurnTimer(io, gameId, playerSocketId) {
   const game = gameManager.getGame(gameId);
   if (!game) return;
 
+  // Limpar intervalo anterior se existir
+  if (stateUpdateIntervals.has(gameId)) {
+    clearInterval(stateUpdateIntervals.get(gameId));
+  }
+
   const timeoutId = setTimeout(() => {
     const timeoutCheck = gameManager.checkTurnTimeout(gameId);
     if (timeoutCheck) {
       console.log(`[Game] ${gameId} - Timeout by player`);
+
+      // Limpar intervalo
+      if (stateUpdateIntervals.has(gameId)) {
+        clearInterval(stateUpdateIntervals.get(gameId));
+        stateUpdateIntervals.delete(gameId);
+      }
 
       // Notificar ambos
       io.to(game.player1.socketId)
@@ -293,6 +347,18 @@ function startTurnTimer(io, gameId, playerSocketId) {
   }, game.turnTimeLimit);
 
   turnTimers.set(gameId, timeoutId);
+
+  // Enviar atualizações de estado a cada 500ms para manter o timer sincronizado
+  const stateInterval = setInterval(() => {
+    const gameState = gameManager.getGameState(gameId);
+    if (gameState) {
+      io.to(game.player1.socketId)
+        .to(game.player2.socketId)
+        .emit('game:state_update', gameState);
+    }
+  }, 500);
+
+  stateUpdateIntervals.set(gameId, stateInterval);
 }
 
 /**
@@ -342,6 +408,16 @@ function handlePlayerDisconnect(io, gameId, userId) {
 function handleGameEnd(io, gameId) {
   const game = gameManager.getGame(gameId);
   if (!game) return;
+
+  // Limpar timers e intervalos
+  if (turnTimers.has(gameId)) {
+    clearTimeout(turnTimers.get(gameId));
+    turnTimers.delete(gameId);
+  }
+  if (stateUpdateIntervals.has(gameId)) {
+    clearInterval(stateUpdateIntervals.get(gameId));
+    stateUpdateIntervals.delete(gameId);
+  }
 
   const match = bettingManager.getMatchForGame(gameId);
   if (match) {

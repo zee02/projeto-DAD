@@ -68,6 +68,16 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_user', JSON.stringify(newUser))
   }
 
+  const refreshUser = async () => {
+    try {
+      const response = await apiStore.get('/users/me')
+      setUser(response)
+      return response
+    } catch (error) {
+      console.error('Failed to refresh user:', error)
+    }
+  }
+
   return {
     currentUser,
     token,
@@ -79,6 +89,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     setToken,
     setUser,
+    refreshUser,
   }
 })
 

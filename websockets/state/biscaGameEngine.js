@@ -112,8 +112,8 @@ export class BiscaGameEngine {
     // Distribuir novas cartas
     this.drawCards();
 
-    // Verificar se jogo acabou
-    if (this.deck.length === 0 && this.player1Hand.length === 0) {
+    // Verificar se jogo acabou (não há mais cartas no deck e ambas as mãos estão vazias)
+    if (this.deck.length === 0 && this.player1Hand.length === 0 && this.player2Hand.length === 0) {
       this.finishGame();
     }
 
@@ -171,6 +171,7 @@ export class BiscaGameEngine {
   }
 
   finishGame() {
+    this.phase = 'end';
     this.computeMarks();
     this.winner = this.scores.player1 > this.scores.player2 ? 'player1' : 'player2';
   }
