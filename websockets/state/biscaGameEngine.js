@@ -121,12 +121,15 @@ export class BiscaGameEngine {
 
     this.table = [];
 
-    // Distribuir novas cartas
-    this.drawCards();
+    // Check if game should end BEFORE drawing new cards
+    // Game ends when deck is empty AND both hands will be empty after this trick
+    const shouldEndGame = this.deck.length === 0 && this.player1Hand.length === 0 && this.player2Hand.length === 0;
 
-    // Verificar se jogo acabou (não há mais cartas no deck e ambas as mãos estão vazias)
-    if (this.deck.length === 0 && this.player1Hand.length === 0 && this.player2Hand.length === 0) {
+    if (shouldEndGame) {
       this.finishGame();
+    } else {
+      // Distribuir novas cartas apenas se o jogo não acabou
+      this.drawCards();
     }
 
     // O vencedor do trick joga primeiro no próximo
@@ -193,7 +196,16 @@ export class BiscaGameEngine {
   finishGame() {
     this.phase = 'end';
     this.computeMarks();
-    this.winner = this.scores.player1 > this.scores.player2 ? 'player1' : 'player2';
+    
+    // Determine winner based on scores
+    if (this.scores.player1 > this.scores.player2) {
+      this.winner = 'player1';
+    } else if (this.scores.player2 > this.scores.player1) {
+      this.winner = 'player2';
+    } else {
+      // Draw - no winner
+      this.winner = null;
+    }
   }
 
   computeMarks() {

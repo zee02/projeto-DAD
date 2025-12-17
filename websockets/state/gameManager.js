@@ -27,6 +27,7 @@ export class GameManager {
 
     const game = {
       id: gameId,
+      dbGameId: null, // Will be set when game is saved to database
       player1: { ...player1, score: 0, marks: 0, tricks: [] },
       player2: { ...player2, score: 0, marks: 0, tricks: [] },
       gameType,
@@ -37,6 +38,7 @@ export class GameManager {
       turnTimeLimit: 20000, // 20 segundos
       engine,
       history: [],
+      tricksToSave: [], // Store tricks to save when game ends
       startedAt: Date.now(),
       endedAt: null,
       winner: null,
@@ -114,10 +116,16 @@ export class GameManager {
       // Verificar se trick está completo (2 cartas na mesa)
       const state = game.engine.getState();
       if (state.table.length === 2) {
+        // Save cards info before resolving the trick
+        const [card1, card2] = state.table;
+        const card1Player = game.currentPlayer === "player1" ? game.player1 : game.player2;
+        const card2Player = game.currentPlayer === "player1" ? game.player2 : game.player1;
+        
         // Automaticamente resolver trick no servidor
         const trickWinner = game.engine.resolveTrick();
         const winnerKey =
           trickWinner === "player1" ? "player1" : "player2";
+        const winnerPlayer = game[winnerKey];
 
         game.history.push({
           timestamp: Date.now(),
@@ -125,8 +133,32 @@ export class GameManager {
           action: "won_trick",
         });
 
+        // Get the updated state to get points
+        const updatedState = game.engine.getState();
+        const lastTrick = updatedState[`${winnerKey}Tricks`][updatedState[`${winnerKey}Tricks`].length - 1];
+        const pointsWon = lastTrick ? lastTrick.points : 0;
+
+        // Store trick data to save later when game ends
+        const trickNumber = updatedState.player1Tricks.length + updatedState.player2Tricks.length;
+        game.tricksToSave.push({
+          trick_number: trickNumber,
+          card1_id: card1.id,
+          card1_suit: card1.suit,
+          card1_rank: card1.rank,
+          card1_value: this.getCardValue(card1),
+          card1_player_id: card1Player.userId,
+          card2_id: card2.id,
+          card2_suit: card2.suit,
+          card2_rank: card2.rank,
+          card2_value: this.getCardValue(card2),
+          card2_player_id: card2Player.userId,
+          winner_user_id: winnerPlayer.userId,
+          points_won: pointsWon,
+          trump_suit: updatedState.trumpSuit,
+        });
+
         // Se jogo acabou
-        if (state.phase === "end") {
+        if (updatedState.phase === "end") {
           return this.finishGame(gameId);
         }
 
@@ -222,24 +254,24 @@ export class GameManager {
 
     const state = game.engine.getState();
 
-    // Determinar vencedor
+    // Copiar scores e marks do engine primeiro
+    game.player1.score = state.scores.player1;
+    game.player2.score = state.scores.player2;
+    game.player1.marks = state.marks.player1;
+    game.player2.marks = state.marks.player2;
+
+    // Determinar vencedor baseado nos scores
     if (state.scores.player1 > state.scores.player2) {
       game.winner = "player1";
     } else if (state.scores.player2 > state.scores.player1) {
       game.winner = "player2";
     } else {
-      // Empate - decidir por algo (ex: jogador que começou)
-      game.winner = game.currentPlayer;
+      // Draw - no winner
+      game.winner = null;
     }
 
     game.status = "finished";
     game.endedAt = Date.now();
-
-    // Copiar scores e marks do engine
-    game.player1.score = state.scores.player1;
-    game.player2.score = state.scores.player2;
-    game.player1.marks = state.marks.player1;
-    game.player2.marks = state.marks.player2;
 
     return {
       status: "game_finished",
@@ -268,16 +300,16 @@ export class GameManager {
       player1: {
         userId: game.player1.userId,
         name: game.player1.name,
-        score: game.player1.score,
-        marks: game.player1.marks,
+        score: engineState.scores.player1,
+        marks: engineState.marks.player1,
         hand: engineState.player1Hand,
         trickCount: engineState.player1Tricks.length,
       },
       player2: {
         userId: game.player2.userId,
         name: game.player2.name,
-        score: game.player2.score,
-        marks: game.player2.marks,
+        score: engineState.scores.player2,
+        marks: engineState.marks.player2,
         hand: engineState.player2Hand,
         trickCount: engineState.player2Tricks.length,
       },
@@ -288,6 +320,69 @@ export class GameManager {
       startedAt: game.startedAt,
       endedAt: game.endedAt,
     };
+  }
+
+  /**
+   * Save trick data to the database
+   */
+  async saveTrickToDatabase(game, card1, card2, card1Player, card2Player, winnerPlayer, pointsWon, trickNumber, trumpSuit) {
+    const CARD_VALUES = { A: 11, '7': 10, K: 4, J: 3, Q: 2 };
+    const getCardValue = (card) => CARD_VALUES[card.rank] || 0;
+
+    const trickData = {
+      game_id: game.id,
+      trick_number: trickNumber,
+      card1_id: card1.id,
+      card1_suit: card1.suit,
+      card1_rank: card1.rank,
+      card1_value: getCardValue(card1),
+      card1_player_id: card1Player.userId,
+      card2_id: card2.id,
+      card2_suit: card2.suit,
+      card2_rank: card2.rank,
+      card2_value: getCardValue(card2),
+      card2_player_id: card2Player.userId,
+      winner_user_id: winnerPlayer.userId,
+      points_won: pointsWon,
+      trump_suit: trumpSuit,
+    };
+
+    try {
+      await saveTrick(trickData);
+    } catch (error) {
+      console.error('Failed to save trick to database:', error);
+    }
+  }
+
+  /**
+   * Save all tricks to database
+   */
+  async saveTricksToDatabase(dbGameId, tricks) {
+    if (!dbGameId || !tricks || tricks.length === 0) {
+      return;
+    }
+
+    // Add game_id to each trick
+    const tricksWithGameId = tricks.map(trick => ({
+      ...trick,
+      game_id: dbGameId
+    }));
+
+    try {
+      const { saveTricks } = await import('../utils/apiClient.js');
+      await saveTricks(tricksWithGameId);
+      console.log(`Saved ${tricks.length} tricks to database`);
+    } catch (error) {
+      console.error('Failed to save tricks:', error);
+    }
+  }
+
+  /**
+   * Get card value (helper for trick saving)
+   */
+  getCardValue(card) {
+    const CARD_VALUES = { A: 11, '7': 10, K: 4, J: 3, Q: 2 };
+    return CARD_VALUES[card.rank] || 0;
   }
 
   /**

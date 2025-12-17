@@ -403,9 +403,76 @@ function handlePlayerDisconnect(io, gameId, userId) {
 }
 
 /**
+ * Save game to database and update game object with database ID
+ */
+async function saveGameToDatabase(game) {
+  const API_BASE_URL = process.env.API_URL || 'http://localhost:8000/api';
+  
+  const isDraw = game.player1.score === game.player2.score;
+  
+  // Determine winner and loser based on scores
+  let winnerUserId = null;
+  let loserUserId = null;
+  
+  if (!isDraw) {
+    if (game.player1.score > game.player2.score) {
+      winnerUserId = game.player1.userId;
+      loserUserId = game.player2.userId;
+    } else {
+      winnerUserId = game.player2.userId;
+      loserUserId = game.player1.userId;
+    }
+  }
+  
+  const gameData = {
+    type: game.gameType,
+    player1_user_id: game.player1.userId,
+    player2_user_id: game.player2.userId,
+    is_draw: isDraw,
+    winner_user_id: winnerUserId,
+    loser_user_id: loserUserId,
+    began_at: new Date(game.startedAt).toISOString(),
+    ended_at: new Date(game.endedAt).toISOString(),
+    total_time: (game.endedAt - game.startedAt) / 1000, // in seconds
+    player1_points: game.player1.score,
+    player2_points: game.player2.score,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/games`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(gameData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Failed to save game to database:', error);
+      return { success: false, error };
+    }
+
+    const result = await response.json();
+    console.log('Game saved to database:', result);
+    
+    // Store the database game ID in the game object
+    if (result.data && result.data.id) {
+      game.dbGameId = result.data.id;
+    }
+    
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Error saving game to database:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
  * Processar fim de jogo
  */
-function handleGameEnd(io, gameId) {
+async function handleGameEnd(io, gameId) {
   const game = gameManager.getGame(gameId);
   if (!game) return;
 
@@ -417,6 +484,14 @@ function handleGameEnd(io, gameId) {
   if (stateUpdateIntervals.has(gameId)) {
     clearInterval(stateUpdateIntervals.get(gameId));
     stateUpdateIntervals.delete(gameId);
+  }
+
+  // Save game to database
+  const saveResult = await saveGameToDatabase(game);
+  
+  // Save all tricks to database if game was saved successfully
+  if (saveResult.success && game.dbGameId && game.tricksToSave && game.tricksToSave.length > 0) {
+    await gameManager.saveTricksToDatabase(game.dbGameId, game.tricksToSave);
   }
 
   const match = bettingManager.getMatchForGame(gameId);

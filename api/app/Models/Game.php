@@ -81,4 +81,9 @@ class Game extends Model
     {
         return $this->hasMany(CoinTransaction::class);
     }
+
+    public function tricks()
+    {
+        return $this->hasMany(GameTrick::class)->orderBy('trick_number');
+    }
 }

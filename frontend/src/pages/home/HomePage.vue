@@ -312,6 +312,15 @@ const goToStats = () => {
                 <div class="text-xs text-gray-600">Anonymous overview</div>
               </div>
             </button>
+
+            <button v-if="user" @click="goToHistory" 
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 flex items-center gap-3 group">
+              <svg class="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <div>
+                <div class="font-semibold text-gray-900">Game History</div>
+                <div class="text-xs text-gray-600">View past games</div>
+              </div>
+            </button>
           </div>
         </div>
 

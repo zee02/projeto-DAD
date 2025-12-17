@@ -136,11 +136,59 @@ class GameController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource with detailed trick history.
      */
-    public function show(Game $game)
+    public function show(Request $request, Game $game)
     {
-        //
+        $user = $request->user();
+        
+        // Authorization: users can only see their own games, admins can see all
+        if ($user->type !== 'A' && $game->player1_user_id !== $user->id && $game->player2_user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $game->load([
+            'player1',
+            'player2',
+            'winner',
+            'loser',
+            'tricks.card1Player',
+            'tricks.card2Player',
+            'tricks.winner'
+        ]);
+
+        return response()->json([
+            'data' => $game
+        ]);
+    }
+
+    /**
+     * Get game replay with all tricks for a specific game.
+     */
+    public function replay(Request $request, $id)
+    {
+        $user = $request->user();
+        $game = Game::with([
+            'player1',
+            'player2',
+            'winner',
+            'loser',
+            'tricks.card1Player',
+            'tricks.card2Player',
+            'tricks.winner'
+        ])->findOrFail($id);
+
+        // Authorization: users can only see their own games, admins can see all
+        if ($user->type !== 'A' && $game->player1_user_id !== $user->id && $game->player2_user_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return response()->json([
+            'data' => [
+                'game' => $game,
+                'tricks' => $game->tricks,
+            ]
+        ]);
     }
 
     /**

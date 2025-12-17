@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // User-specific game history
     Route::get('/user/games', [GameController::class, 'myGames']);
+    Route::get('/games/{id}/replay', [GameController::class, 'replay']);
     
         // Admin routes (require admin user)
         Route::middleware([\App\Http\Middleware\EnsureAdmin::class])->prefix('admin')->group(function () {
@@ -53,6 +54,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::apiResource('games', GameController::class);
+
+// Game tricks routes (for websocket server to save tricks)
+Route::post('/game-tricks', [\App\Http\Controllers\GameTrickController::class, 'store']);
+Route::post('/game-tricks/batch', [\App\Http\Controllers\GameTrickController::class, 'storeBatch']);
 
 // Multiplayer match routes (authenticated)
 Route::middleware('auth:sanctum')->group(function () {

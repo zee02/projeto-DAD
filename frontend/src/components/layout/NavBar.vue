@@ -19,6 +19,9 @@
                             <NavigationMenuLink as-child>
                                 <RouterLink to="/stats">Site Statistics</RouterLink>
                             </NavigationMenuLink>
+                            <NavigationMenuLink as-child>
+                                <RouterLink to="/history">Game History</RouterLink>
+                            </NavigationMenuLink>
 
                             <NavigationMenuLink v-if="userLoggedIn && user && user.type === 'A'" as-child>
                                 <RouterLink to="/admin/analytics">Admin Analytics</RouterLink>

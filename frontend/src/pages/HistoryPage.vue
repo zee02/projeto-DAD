@@ -1,13 +1,13 @@
 <template>
   <div class="max-w-5xl mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">Meu Histórico de Jogos</h1>
+    <h1 class="text-2xl font-bold mb-4">My Game History</h1>
 
     <div class="bg-white shadow rounded-lg p-4 mb-4">
       <div class="flex items-center justify-between mb-3">
         <div class="flex gap-3 items-center">
-          <label class="text-sm text-gray-600">Tipo</label>
+          <label class="text-sm text-gray-600">Type</label>
           <select v-model="filters.type" class="border rounded px-2 py-1 text-sm">
-            <option value="">Todos</option>
+            <option value="">All</option>
             <option value="3">Bisca 3</option>
             <option value="9">Bisca 9</option>
           </select>
@@ -23,7 +23,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button @click="reload" class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Aplicar</button>
+          <button @click="reload" class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Apply</button>
         </div>
       </div>
 
@@ -31,17 +31,18 @@
         <table class="w-full text-left table-auto border-collapse">
           <thead>
             <tr class="text-sm text-gray-600">
-              <th class="p-2">Data</th>
-              <th class="p-2">Oponente</th>
-              <th class="p-2">Resultado</th>
-              <th class="p-2">Pontos</th>
-              <th class="p-2">Duração</th>
-              <th class="p-2">Tipo</th>
+              <th class="p-2">Date</th>
+              <th class="p-2">Opponent</th>
+              <th class="p-2">Result</th>
+              <th class="p-2">Points</th>
+              <th class="p-2">Duration</th>
+              <th class="p-2">Type</th>
               <th class="p-2">Status</th>
+              <th class="p-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="g in games" :key="g.id" class="border-t text-sm">
+            <tr v-for="g in games" :key="g.id" class="border-t text-sm hover:bg-gray-50">
               <td class="p-2">{{ formatDate(g.began_at) }}</td>
               <td class="p-2">{{ opponentName(g) }}</td>
               <td class="p-2">{{ resultLabel(g) }}</td>
@@ -49,16 +50,25 @@
               <td class="p-2">{{ durationLabel(g) }}</td>
               <td class="p-2">{{ g.type }}</td>
               <td class="p-2">{{ g.status }}</td>
+              <td class="p-2">
+                <button 
+                  v-if="g.status === 'Ended'"
+                  @click="viewReplay(g.id)" 
+                  class="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700"
+                >
+                  View Replay
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="mt-4 flex items-center justify-between">
-        <div class="text-sm text-gray-600">Página {{ meta.current_page }} de {{ meta.last_page || 1 }}</div>
+        <div class="text-sm text-gray-600">Page {{ meta.current_page }} of {{ meta.last_page || 1 }}</div>
         <div class="flex gap-2">
-          <button class="px-3 py-1 border rounded" @click="prevPage" :disabled="meta.current_page <= 1">Anterior</button>
-          <button class="px-3 py-1 border rounded" @click="nextPage" :disabled="meta.current_page >= (meta.last_page || 1)">Próxima</button>
+          <button class="px-3 py-1 border rounded" @click="prevPage" :disabled="meta.current_page <= 1">Previous</button>
+          <button class="px-3 py-1 border rounded" @click="nextPage" :disabled="meta.current_page >= (meta.last_page || 1)">Next</button>
         </div>
       </div>
     </div>
@@ -67,9 +77,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAPIStore } from '@/stores/api'
 import { useAuthStore } from '@/stores/auth'
 
+const router = useRouter()
 const api = useAPIStore()
 const auth = useAuthStore()
 
@@ -135,9 +147,9 @@ const opponentName = (g) => {
 const resultLabel = (g) => {
   const myId = auth.currentUserID || auth.user?.id
   if (!myId) return '-'
-  if (g.is_draw) return 'Empate'
-  if (g.winner_user_id === myId) return 'Vitória'
-  if (g.loser_user_id === myId) return 'Derrota'
+  if (g.is_draw) return 'Draw'
+  if (g.winner_user_id === myId) return 'Victory'
+  if (g.loser_user_id === myId) return 'Defeat'
   return '-'
 }
 
@@ -154,6 +166,10 @@ const durationLabel = (g) => {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+const viewReplay = (gameId) => {
+  router.push(`/game-replay/${gameId}`)
 }
 </script>
 

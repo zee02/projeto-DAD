@@ -112,6 +112,16 @@
               </TableCell>
               <TableCell class="text-right">
                 <div class="flex justify-end gap-1">
+                  <Button 
+                    v-if="g.status === 'Ended'"
+                    size="sm" 
+                    variant="ghost" 
+                    class="h-8 px-2 text-xs"
+                    @click="viewReplay(g.id)"
+                    title="View Replay"
+                  >
+                    🎬 Replay
+                  </Button>
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0" @click="viewGame(g)">
                     👁
                   </Button>
@@ -152,6 +162,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAPIStore } from '@/stores/api'
 import { toast } from 'vue-sonner'
 import { format } from 'date-fns'
@@ -166,6 +177,7 @@ import TableHead from '@/components/ui/table/TableHead.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import StatCard from '@/components/admin/StatCard.vue'
 
+const router = useRouter()
 const games = ref([])
 const api = useAPIStore()
 const isLoading = ref(false)
@@ -199,7 +211,11 @@ const viewGame = (game) => {
   toast.info(`Viewing game #${game.id}`)
   // TODO: Open game detail modal
 }
+viewReplay = (gameId) => {
+  router.push(`/game-replay/${gameId}`)
+}
 
+const 
 const fetch = async () => {
   isLoading.value = true
   try {

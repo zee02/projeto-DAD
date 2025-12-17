@@ -147,6 +147,14 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/user/games`, { params })
   }
 
+  const getGameReplay = (gameId) => {
+    return axios.get(`${API_BASE_URL}/games/${gameId}/replay`)
+  }
+
+  const getGameDetails = (gameId) => {
+    return axios.get(`${API_BASE_URL}/games/${gameId}`)
+  }
+
   const getOverviewStats = () => {
     return axios.get(`${API_BASE_URL}/stats/overview`)
   }
@@ -207,6 +215,8 @@ export const useAPIStore = defineStore('api', () => {
     // Leaderboards & stats
     getLeaderboards,
     getMyGames,
+    getGameReplay,
+    getGameDetails,
     getOverviewStats,
     getAnonymousStats,
     // Multiplayer matches

@@ -140,6 +140,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/game-replay/:id',
+      name: 'game-replay',
+      component: () => import('@/pages/GameReplayPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/singleplayer',
       name: 'singleplayer',
       component: () => import('@/pages/game/SinglePlayerGame.vue')
