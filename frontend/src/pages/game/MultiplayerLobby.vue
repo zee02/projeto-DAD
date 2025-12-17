@@ -17,6 +17,7 @@ const gameType = ref(route.query.mode || '3')
 const betOptions = [2, 5, 10]
 const leftLobby = ref(false)
 const coinsRefunded = ref(false) // Track if coins were already refunded
+const userCanceledSearch = ref(false) // Track if user clicked cancel
 
 // UI state
 const isLoading = ref(false)
@@ -68,7 +69,8 @@ const joinLobby = async () => {
 
 // Cancel waiting
 const cancelWaiting = () => {
-  socketStore.socket.emit('lobby:leave')
+  userCanceledSearch.value = true
+  socketStore.socket.emit('lobby:leave', { userCanceled: true })
   
   // Refund coins since game hasn't started (only once)
   if (!coinsRefunded.value) {
@@ -82,6 +84,11 @@ const cancelWaiting = () => {
   waitingForOpponent.value = false
   lobbyId.value = null
   successMessage.value = ''
+  // Inform user locally; no redirect
+  errorMessage.value = 'Game canceled'
+  setTimeout(() => {
+    errorMessage.value = ''
+  }, 1000)
 }
 
 // Set up socket listeners
@@ -132,7 +139,12 @@ onMounted(() => {
   // Listening for opponent leaving lobby
   socketStore.socket.on('lobby:player_left', (payload) => {
     console.log('Opponent left lobby:', payload)
-    errorMessage.value = payload.message
+    // Show different message based on who left
+    if (userCanceledSearch.value) {
+      errorMessage.value = 'Game canceled'
+    } else {
+      errorMessage.value = payload.message || 'Opponent left the lobby'
+    }
     waitingForOpponent.value = false
     
     // Refund coins since game didn't start (only once)

@@ -90,6 +90,11 @@ export const handleConnectionEvents = (io, socket) => {
         // Remover lobby do Map já que o jogo começou
         lobbyManager.removeLobby(lobby.id);
 
+        // Join both players to game room for synchronized state updates and reconnections
+        io.sockets.sockets.get(lobby.player1.socketId)?.join(`game_${gameId}`);
+        io.sockets.sockets.get(lobby.player2.socketId)?.join(`game_${gameId}`);
+        console.log(`[Game] Both players joined room: game_${gameId}`);
+
         // Notificar ambos players
         const gameStatePayload = gameManager.getGameState(gameId);
         console.log(
@@ -133,8 +138,8 @@ export const handleConnectionEvents = (io, socket) => {
   /**
    * Player sair da lobby
    */
-  socket.on('lobby:leave', () => {
-    console.log(`[${socket.id}] Leaving lobby`);
+  socket.on('lobby:leave', (payload = {}) => {
+    console.log(`[${socket.id}] Leaving lobby`, payload);
 
     const userId = socket.data.userId;
     if (!userId) return;
@@ -143,13 +148,7 @@ export const handleConnectionEvents = (io, socket) => {
       const result = lobbyManager.leaveLobby(userId);
       socket.emit('lobby:left', result);
       
-      // Notificar outros players na sala que um player saiu
-      const gameType = socket.data.gameType;
-      const betAmount = socket.data.betAmount;
-      io.to(`lobby_${gameType}_${betAmount}`).emit('lobby:player_left', {
-        userId,
-        message: 'Opponent left the lobby'
-      });
+      // Não notificar outros jogadores: procura é isolada e silenciosa
       
       socket.leave(
         `lobby_${socket.data.gameType}_${socket.data.betAmount}`
@@ -162,7 +161,7 @@ export const handleConnectionEvents = (io, socket) => {
   // ========== GAME EVENTS ==========
 
   /**
-   * Cliente pede estado atual do jogo (re-sync ao abrir página)
+   * Cliente pede estado atual do jogo (re-sync, não reconexão)
    * payload: { gameId }
    */
   socket.on('game:request_state', (payload) => {
@@ -259,8 +258,7 @@ export const handleConnectionEvents = (io, socket) => {
         }
 
         // Notificar ambos players
-        io.to(game.player1.socketId)
-          .to(game.player2.socketId)
+        io.to(`game_${gameId}`)
           .emit('game:surrendered', {
             gameId,
             surrenderedBy: userId,
@@ -289,13 +287,7 @@ export const handleConnectionEvents = (io, socket) => {
     if (lobby) {
       lobbyManager.leaveLobby(userId);
       
-      // Notificar outros players na sala que um player saiu
-      const gameType = socket.data.gameType;
-      const betAmount = socket.data.betAmount;
-      io.to(`lobby_${gameType}_${betAmount}`).emit('lobby:player_left', {
-        userId,
-        message: 'Opponent disconnected and left the lobby'
-      });
+      // Não notificar outros jogadores sobre desconexão na procura
       
       console.log(`[Lobby] Player ${userId} left lobby due to disconnect`);
     }
@@ -334,8 +326,7 @@ function startTurnTimer(io, gameId, playerSocketId) {
       }
 
       // Notificar ambos
-      io.to(game.player1.socketId)
-        .to(game.player2.socketId)
+      io.to(`game_${gameId}`)
         .emit('game:timeout', {
           gameId,
           winner: timeoutCheck.winner.userId,
@@ -352,8 +343,8 @@ function startTurnTimer(io, gameId, playerSocketId) {
   const stateInterval = setInterval(() => {
     const gameState = gameManager.getGameState(gameId);
     if (gameState) {
-      io.to(game.player1.socketId)
-        .to(game.player2.socketId)
+      // Broadcast to all sockets in the game room (handles reconnections automatically)
+      io.to(`game_${gameId}`)
         .emit('game:state_update', gameState);
     }
   }, 500);
@@ -370,8 +361,7 @@ function handlePlayerTimeout(io, gameId, userId) {
 
   gameManager.surrender(gameId, userId);
 
-  io.to(game.player1.socketId)
-    .to(game.player2.socketId)
+  io.to(`game_${gameId}`)
     .emit('game:timeout', {
       gameId,
       timedOutUserId: userId,
@@ -382,24 +372,48 @@ function handlePlayerTimeout(io, gameId, userId) {
 }
 
 /**
- * Processar desconexão de player
+ * Processar desconexão de player: contar como desistência
  */
 function handlePlayerDisconnect(io, gameId, userId) {
   const game = gameManager.getGame(gameId);
   if (!game) return;
 
-  const opponentSocketId =
-    game.player1.userId === userId
-      ? game.player2.socketId
-      : game.player1.socketId;
+  // Determinar vencedor (o outro player)
+  const winnerKey = game.player1.userId === userId ? 'player2' : 'player1';
+  const loserKey = game.player1.userId === userId ? 'player1' : 'player2';
 
-  io.to(opponentSocketId).emit('game:opponent_disconnected', {
+  // Atribuir todas as cartas restantes ao vencedor
+  if (typeof game.engine.awardRemainingTo === 'function') {
+    game.engine.awardRemainingTo(winnerKey);
+  }
+
+  // Atualizar scores
+  const state = game.engine.getState();
+  game.player1.score = state.scores.player1;
+  game.player2.score = state.scores.player2;
+  game.winner = winnerKey;
+  game.status = 'finished';
+  game.endedAt = Date.now();
+
+  // Notificar ambos players sobre a desconexão e resultado
+  io.to(`game_${gameId}`).emit('game:opponent_disconnected', {
     gameId,
-    opponentUserId: userId,
+    disconnectedUserId: userId,
+    winner: game[winnerKey].userId,
   });
 
-  gameManager.removeGame(gameId);
-  clearTimeout(turnTimers.get(gameId));
+  // Limpar timers
+  if (turnTimers.has(gameId)) {
+    clearTimeout(turnTimers.get(gameId));
+    turnTimers.delete(gameId);
+  }
+  if (stateUpdateIntervals.has(gameId)) {
+    clearInterval(stateUpdateIntervals.get(gameId));
+    stateUpdateIntervals.delete(gameId);
+  }
+
+  // Finalizar o jogo normalmente (salvar na DB, etc)
+  handleGameEnd(io, gameId);
 }
 
 /**
@@ -510,8 +524,7 @@ async function handleGameEnd(io, gameId) {
     );
 
     // Notificar resultado do match
-    io.to(game.player1.socketId)
-      .to(game.player2.socketId)
+    io.to(`game_${gameId}`)
       .emit('match:game_result', {
         gameId,
         winner: game[winner],
@@ -521,8 +534,7 @@ async function handleGameEnd(io, gameId) {
 
     // Se match acabou
     if (matchResult.match.status === 'finished') {
-      io.to(game.player1.socketId)
-        .to(game.player2.socketId)
+      io.to(`game_${gameId}`)
         .emit('match:finished', {
           matchId: match.id,
           winner: matchResult.match.winner,

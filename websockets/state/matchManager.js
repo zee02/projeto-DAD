@@ -24,6 +24,7 @@ export class BettingManager {
         userId: player1.userId,
         socketId: player1.socketId,
         wins: 0,
+        marks: 0,
         coinsWon: 0,
         coinsBet: 0,
         status: 'active',
@@ -32,6 +33,7 @@ export class BettingManager {
         userId: player2.userId,
         socketId: player2.socketId,
         wins: 0,
+        marks: 0,
         coinsWon: 0,
         coinsBet: 0,
         status: 'active',
@@ -74,11 +76,34 @@ export class BettingManager {
     match.player1.coinsBet += betAmount;
     match.player2.coinsBet += betAmount;
 
-    // Atualizar vitória
+    // Calcular marcas deste jogo segundo pontuação
+    const calcMarks = (score) => {
+      if (score >= 120) return 999; // sinaliza bandeira (vitória limpa do match)
+      if (score >= 91) return 2; // capote
+      if (score >= 61) return 1; // risca
+      return 0;
+    };
+
+    const p1Marks = calcMarks(scores.player1 || 0);
+    const p2Marks = calcMarks(scores.player2 || 0);
+
+    // Bandeira: vitória limpa do match
+    if (p1Marks === 999 || p2Marks === 999) {
+      const forceWinner = p1Marks === 999 ? 'player1' : 'player2';
+      // ainda assim registrar jogo
+      match.games.push({ gameId, winner, scores, timestamp: Date.now() });
+      return this.finishMatch(matchId, forceWinner);
+    }
+
+    // Acumular marcas
+    match.player1.marks += p1Marks;
+    match.player2.marks += p2Marks;
+
+    // Atualizar vitórias (mantido para compatibilidade de UI)
     if (winner === 'player1') {
       match.player1.wins++;
-      match.player1.coinsWon += betAmount * 2; // Ganha a aposta do adversário + a sua
-    } else {
+      match.player1.coinsWon += betAmount * 2;
+    } else if (winner === 'player2') {
       match.player2.wins++;
       match.player2.coinsWon += betAmount * 2;
     }
@@ -92,10 +117,8 @@ export class BettingManager {
     });
 
     // Verificar se partida acabou
-    if (
-      match.player1.wins >= match.maxWins ||
-      match.player2.wins >= match.maxWins
-    ) {
+    // Termina quando algum atinge 4 marcas
+    if (match.player1.marks >= 4 || match.player2.marks >= 4) {
       return this.finishMatch(matchId);
     }
 

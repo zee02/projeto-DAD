@@ -14,12 +14,12 @@ export class GameManager {
   /**
    * Iniciar novo jogo
    */
-  startGame(gameId, player1, player2, gameType = "bisca", betAmount = 2) {
+  startGame(gameId, player1, player2, gameType = "3", betAmount = 2) {
     if (this.games.has(gameId)) {
       throw new Error(`Game ${gameId} already exists`);
     }
 
-    const engine = new BiscaGameEngine();
+    const engine = new BiscaGameEngine(gameType);
     engine.initGame();
 
     // Aleatoriamente escolher quem é o primeiro a jogar
@@ -117,9 +117,12 @@ export class GameManager {
       const state = game.engine.getState();
       if (state.table.length === 2) {
         // Save cards info before resolving the trick
-        const [card1, card2] = state.table;
-        const card1Player = game.currentPlayer === "player1" ? game.player1 : game.player2;
-        const card2Player = game.currentPlayer === "player1" ? game.player2 : game.player1;
+        const tableEntry1 = state.table[0];
+        const tableEntry2 = state.table[1];
+        const card1 = tableEntry1.card;
+        const card2 = tableEntry2.card;
+        const card1Player = tableEntry1.owner === 'player1' ? game.player1 : game.player2;
+        const card2Player = tableEntry2.owner === 'player1' ? game.player1 : game.player2;
         
         // Automaticamente resolver trick no servidor
         const trickWinner = game.engine.resolveTrick();
@@ -194,6 +197,13 @@ export class GameManager {
     const loserKey = playerKey;
     const winnerKey = playerKey === "player1" ? "player2" : "player1";
 
+    // Award remaining cards to winner and finalize scores
+    if (typeof game.engine.awardRemainingTo === 'function') {
+      game.engine.awardRemainingTo(winnerKey);
+    }
+    const state = game.engine.getState();
+    game.player1.score = state.scores.player1;
+    game.player2.score = state.scores.player2;
     game.status = "finished";
     game.winner = winnerKey;
     game.endedAt = Date.now();
@@ -225,6 +235,13 @@ export class GameManager {
       const winnerKey =
         game.currentPlayer === "player1" ? "player2" : "player1";
 
+      // Award remaining cards to winner and finalize scores
+      if (typeof game.engine.awardRemainingTo === 'function') {
+        game.engine.awardRemainingTo(winnerKey);
+      }
+      const state = game.engine.getState();
+      game.player1.score = state.scores.player1;
+      game.player2.score = state.scores.player2;
       game.status = "finished";
       game.winner = winnerKey;
       game.endedAt = Date.now();
@@ -313,7 +330,7 @@ export class GameManager {
         hand: engineState.player2Hand,
         trickCount: engineState.player2Tricks.length,
       },
-      table: engineState.table.map((c, idx) => ({ owner: idx === 0 ? 'player1' : 'player2', card: c })),
+      table: engineState.table,
       trumpCard: engineState.trumpCard,
       deckRemaining: engineState.deck.length,
       winner: game.winner,

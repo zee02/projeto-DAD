@@ -9,7 +9,7 @@ const RANKS = ['A', '7', 'K', 'J', 'Q', '6', '5', '4', '3', '2'];
 const CARD_VALUES = { A: 11, '7': 10, K: 4, J: 3, Q: 2 };
 
 export class BiscaGameEngine {
-  constructor() {
+  constructor(mode = '3') {
     this.deck = [];
     this.player1Hand = [];
     this.player2Hand = [];
@@ -23,13 +23,16 @@ export class BiscaGameEngine {
     this.scores = { player1: 0, player2: 0 };
     this.marks = { player1: 0, player2: 0 };
     this.winner = null;
+    this.mode = mode === '9' ? '9' : '3';
+    this.handSize = this.mode === '9' ? 9 : 3;
   }
 
   initGame() {
     this.deck = this.createDeck();
     this.shuffleDeck();
     this.dealCards();
-    this.trumpCard = this.deck.pop();
+    // Trump é a última carta do baralho, permanece no baralho
+    this.trumpCard = this.deck[this.deck.length - 1];
     this.trumpSuit = this.trumpCard.suit;
   }
 
@@ -51,8 +54,8 @@ export class BiscaGameEngine {
   }
 
   dealCards() {
-    // Distribuir 3 cartas a cada jogador
-    for (let i = 0; i < 3; i++) {
+    // Distribuir cartas iniciais (3 ou 9 por jogador)
+    for (let i = 0; i < this.handSize; i++) {
       this.player1Hand.push(this.deck.pop());
       this.player2Hand.push(this.deck.pop());
     }
@@ -63,9 +66,18 @@ export class BiscaGameEngine {
     if (cardIndex === -1) {
       return { success: false, message: 'Card not found in hand' };
     }
+    // Validar jogada na fase sem compra (seguir naipe se possível)
+    if (this.phase === 'no-draw' && this.table.length === 1) {
+      const leadSuit = this.table[0].card.suit;
+      const hasSuit = this.player1Hand.some(c => c.suit === leadSuit);
+      const chosen = this.player1Hand[cardIndex];
+      if (hasSuit && chosen.suit !== leadSuit) {
+        return { success: false, message: 'Must follow suit' };
+      }
+    }
 
     const card = this.player1Hand[cardIndex];
-    this.table.push(card);
+    this.table.push({ card, owner: 'player1' });
     this.player1Hand.splice(cardIndex, 1);
 
     return { success: true, card };
@@ -76,9 +88,18 @@ export class BiscaGameEngine {
     if (cardIndex === -1) {
       return { success: false, message: 'Card not found in hand' };
     }
+    // Validar jogada na fase sem compra (seguir naipe se possível)
+    if (this.phase === 'no-draw' && this.table.length === 1) {
+      const leadSuit = this.table[0].card.suit;
+      const hasSuit = this.player2Hand.some(c => c.suit === leadSuit);
+      const chosen = this.player2Hand[cardIndex];
+      if (hasSuit && chosen.suit !== leadSuit) {
+        return { success: false, message: 'Must follow suit' };
+      }
+    }
 
     const card = this.player2Hand[cardIndex];
-    this.table.push(card);
+    this.table.push({ card, owner: 'player2' });
     this.player2Hand.splice(cardIndex, 1);
 
     return { success: true, card };
@@ -93,7 +114,8 @@ export class BiscaGameEngine {
       throw new Error('Trick not complete');
     }
 
-    const [card1, card2] = this.table;
+    const card1 = this.table[0].card;
+    const card2 = this.table[1].card;
     const secondWins = this.doesSecondCardWin(card1, card2);
     const winner = secondWins ? 'player2' : 'player1';
 
@@ -166,27 +188,21 @@ export class BiscaGameEngine {
   }
 
   doesSecondCardWin(firstCard, secondCard) {
-    // Trump rules in Bisca:
-    // 1. Trump always beats non-trump (regardless of value)
-    // 2. Same suit: higher-value card wins
-    // 3. Different non-trump suits: higher-value card wins
-
-    const firstIsTrump = firstCard.suit === this.trumpSuit;
-    const secondIsTrump = secondCard.suit === this.trumpSuit;
-
-    // If second is trump and first is not, second wins
-    if (secondIsTrump && !firstIsTrump) {
+    // Regras corretas:
+    // - Mesmo naipe: maior valor ganha
+    // - Se naipes diferentes e segundo é trunfo (e o primeiro não), segundo ganha
+    // - Se naipes diferentes e nenhum é trunfo, ganha quem abriu (segundo NÃO ganha)
+    const trump = this.trumpSuit;
+    if (firstCard.suit === secondCard.suit) {
+      return this.getCardValue(secondCard) > this.getCardValue(firstCard);
+    }
+    if (secondCard.suit === trump && firstCard.suit !== trump) {
       return true;
     }
-
-    // If first is trump and second is not, first wins (second doesn't win)
-    if (firstIsTrump && !secondIsTrump) {
+    if (firstCard.suit === trump && secondCard.suit !== trump) {
       return false;
     }
-
-    // Both trump or both non-trump: compare by value
-    // This handles both: same suit comparison AND different non-trump suits
-    return this.getCardValue(secondCard) > this.getCardValue(firstCard);
+    return false;
   }
 
   getCardValue(card) {
@@ -206,6 +222,45 @@ export class BiscaGameEngine {
       // Draw - no winner
       this.winner = null;
     }
+  }
+
+  /**
+   * Em caso de timeout/desistência, atribuir todas as cartas restantes ao vencedor
+   * (mãos, mesa e baralho), atualizar pontuações e finalizar jogo.
+   */
+  awardRemainingTo(winnerKey) {
+    // Coletar todas as cartas remanescentes
+    const remaining = [];
+    // cartas na mesa (extrair card do {card, owner})
+    if (this.table && this.table.length) {
+      remaining.push(...this.table.map(t => t.card));
+      this.table = [];
+    }
+    // mãos
+    remaining.push(...this.player1Hand);
+    remaining.push(...this.player2Hand);
+    this.player1Hand = [];
+    this.player2Hand = [];
+    // baralho restante (inclui trump por ser última carta)
+    if (this.deck && this.deck.length) {
+      remaining.push(...this.deck);
+      this.deck = [];
+    }
+
+    // Somar pontos das cartas restantes
+    const extraPoints = remaining.reduce((sum, c) => sum + (this.getCardValue(c) || 0), 0);
+
+    if (winnerKey === 'player1') {
+      this.player1Tricks.push({ cards: remaining, points: extraPoints });
+      this.scores.player1 += extraPoints;
+    } else {
+      this.player2Tricks.push({ cards: remaining, points: extraPoints });
+      this.scores.player2 += extraPoints;
+    }
+
+    // Finalizar
+    this.finishGame();
+    this.winner = winnerKey;
   }
 
   computeMarks() {

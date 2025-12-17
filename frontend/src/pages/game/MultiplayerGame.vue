@@ -31,6 +31,8 @@ const gameResult = ref(null)
 const matchFinished = ref(false)
 const matchResult = ref(null)
 const showSurrenderConfirm = ref(false)
+const showTimeoutModal = ref(false)
+const timeoutResult = ref(null)
 // Fallback-aware effective bet amount for UI messages (e.g., surrender)
 const effectiveBetAmount = computed(() => {
   // Priority: betAmount (set from game:start) > sessionStorage > match.betPerGame > payload
@@ -48,6 +50,13 @@ const effectiveBetAmount = computed(() => {
 const notifications = ref([]) // Array of {id, type, message, icon, duration}
 let notificationIdCounter = 0
 
+// Flags to avoid duplicate notifications/payouts on surrender/disconnect
+const suppressRoundNotifs = ref(false)
+const suppressMatchNotifs = ref(false)
+
+// Guard to avoid double coin awards per game
+const coinsAwarded = ref(false)
+
 const addNotification = (message, type = 'info', icon = '', duration = 3000) => {
   const id = notificationIdCounter++
   notifications.value.push({ id, type, message, icon, duration })
@@ -61,22 +70,34 @@ const addNotification = (message, type = 'info', icon = '', duration = 3000) => 
   return id
 }
 
-const removeNotification = (id) => {
-  notifications.value = notifications.value.filter(n => n.id !== id)
-}
+  // Store socket event handlers for proper cleanup
+  const socketHandlers = {
+    onGameStart: null,
+    onGameStateUpdate: null,
+    onGameFinished: null,
+    onMatchGameResult: null,
+    onMatchFinished: null,
+    onGameTimeout: null,
+    onOpponentDisconnected: null,
+    onGameSurrendered: null,
+    onGameError: null,
+  }
 
-// Timer state
-const localCountdown = ref(20)
-const timeWarning = ref(null) // 'critical' (3s), 'warning' (5s), or null
-const previousTurnTimeRemaining = ref(20000)
-
-// Helpers to map player perspective
 const myOwner = computed(() => {
   if (!gameState.value || !user.value) return 'player1'
   return gameState.value.player1.userId === user.value.id ? 'player1' : 'player2'
 })
 
 const oppOwner = computed(() => (myOwner.value === 'player1' ? 'player2' : 'player1'))
+
+// Helper to map server owner ('player1'/'player2') to local perspective
+const localOwner = (serverOwner) => {
+  if (myOwner.value === 'player1') {
+    return serverOwner === 'player1' ? 'me' : 'opponent'
+  } else {
+    return serverOwner === 'player2' ? 'me' : 'opponent'
+  }
+}
 
 // Timer styling based on warning state
 const timerClasses = computed(() => {
@@ -240,6 +261,34 @@ const goBack = () => {
   router.push('/')
 }
 
+// Go back from timeout modal and close lobby
+const goBackFromTimeout = () => {
+  showTimeoutModal.value = false
+  // Emit event to close lobby (if we're still connected)
+  socketStore.socket.emit('lobby:leave', {})
+  // Redirect to home
+  setTimeout(() => {
+    router.push('/')
+  }, 300)
+}
+
+// Continue to next game after round finishes
+const continueToNextGame = () => {
+  gameFinished.value = false
+  gameResult.value = null
+  // Game will continue automatically as the server sends next round game state
+}
+
+// Go home after opponent disconnects
+const goHomeAfterDisconnect = () => {
+  // Emit lobby leave to notify server
+  socketStore.socket.emit('lobby:leave', {})
+  // Redirect to home
+  setTimeout(() => {
+    router.push('/')
+  }, 300)
+}
+
 // Track if we already deducted coins for this game
 const coinsAlreadyDeducted = ref(false)
 
@@ -317,7 +366,7 @@ onMounted(() => {
   }
 
   // Listening for game start
-  socketStore.socket.on('game:start', (payload) => {
+  socketHandlers.onGameStart = (payload) => {
     console.log('[MultiplayerGame] Game started event received:', payload)
     gameId.value = payload.gameId
     matchId.value = payload.matchId
@@ -330,10 +379,11 @@ onMounted(() => {
     if (socketStore.lastGameStartPayload) {
       socketStore.lastGameStartPayload.value = null // Clear after using
     }
-  })
+  }
+  socketStore.socket.on('game:start', socketHandlers.onGameStart)
 
   // Listening for game state updates
-  socketStore.socket.on('game:state_update', (state) => {
+  socketHandlers.onGameStateUpdate = (state) => {
     console.log('Game state updated:', state)
     
     gameState.value = state
@@ -342,26 +392,29 @@ onMounted(() => {
     isPlayingCard.value = false
     updateTurnTimer()
     gameMessage.value = ''
-  })
+  }
+  socketStore.socket.on('game:state_update', socketHandlers.onGameStateUpdate)
 
   // Listening for game finished
-  socketStore.socket.on('game:finished', (payload) => {
+  socketHandlers.onMatchGameResult = (payload) => {
     console.log('Game finished:', payload)
     gameFinished.value = true
-    gameResult.value = payload
-    
-    // Show notification only to relevant player
-    const isWinner = payload.winner === myOwner.value
-    if (isWinner) {
-      addNotification('🎉 You won this round!', 'success', '🏆', 3000)
-    } else {
-      addNotification('❌ You lost this round', 'info', '😔', 3000)
+    gameResult.value = {
+      winner: payload.winner.userId === user.value.id ? myOwner.value : oppOwner.value,
+      myScore: myOwner.value === 'player1' ? payload.scores.player1 : payload.scores.player2,
+      oppScore: myOwner.value === 'player1' ? payload.scores.player2 : payload.scores.player1,
     }
-  })
-
-  // Listening for match game result
-  socketStore.socket.on('match:game_result', (payload) => {
-    console.log('Match game result:', payload)
+    
+    // Show notification only if not suppressed (e.g., surrender already notified)
+    if (!suppressRoundNotifs.value) {
+      const isWinner = payload.winner.userId === user.value.id
+      if (isWinner) {
+        addNotification('🎉 You won this round!', 'success', '🏆', 3000)
+      } else {
+        addNotification('❌ You lost this round', 'info', '😔', 3000)
+      }
+    }
+    
     match.value = payload.match
     gameMessage.value = `Game result: ${payload.winner.userId === user.value.id ? 'You won! 🎉' : 'You lost'}`
     // Deduct additional bet(s) for completed games beyond the first
@@ -375,20 +428,41 @@ onMounted(() => {
       authStore.setUser({ ...user.value, coins_balance: next })
       deductedGamesCount.value = gamesPlayed
     }
-  })
+  }
+  socketStore.socket.on('match:game_result', socketHandlers.onMatchGameResult)
+
+  // Listening for old game:finished (for compatibility)
+  socketHandlers.onGameFinished = (payload) => {
+    console.log('Game finished (old format):', payload)
+    gameFinished.value = true
+    gameResult.value = payload
+    
+    // Show notification only if not suppressed (e.g., surrender already notified)
+    if (!suppressRoundNotifs.value) {
+      const isWinner = payload.winner === myOwner.value
+      if (isWinner) {
+        addNotification('🎉 You won this round!', 'success', '🏆', 3000)
+      } else {
+        addNotification('❌ You lost this round', 'info', '😔', 3000)
+      }
+    }
+  }
+  socketStore.socket.on('game:finished', socketHandlers.onGameFinished)
 
   // Listening for match finished
-  socketStore.socket.on('match:finished', (payload) => {
+  socketHandlers.onMatchFinished = (payload) => {
     console.log('Match finished:', payload)
     matchFinished.value = true
     matchResult.value = payload
     
-    // Show notification only to relevant player
-    const isWinner = payload.winner === myOwner.value
-    if (isWinner) {
-      addNotification(`💰 You won the match! +${payload.winner === 'player1' ? payload.match.player1.coinsWon : payload.match.player2.coinsWon} coins`, 'success', '🏆', 4000)
-    } else {
-      addNotification(`Match finished`, 'info', '🎮', 3000)
+    // Show notification only if not suppressed (e.g., surrender already notified)
+    if (!suppressMatchNotifs.value) {
+      const isWinner = payload.winner === myOwner.value
+      if (isWinner) {
+        addNotification(`💰 You won the match! +${payload.winner === 'player1' ? payload.match.player1.coinsWon : payload.match.player2.coinsWon} coins`, 'success', '🏆', 4000)
+      } else {
+        addNotification(`Match finished`, 'info', '🎮', 3000)
+      }
     }
     
     gameMessage.value = `${
@@ -406,46 +480,85 @@ onMounted(() => {
     
     // Salvar match na database
     saveMatchToDatabase(payload)
-  })
+  }
+  socketStore.socket.on('match:finished', socketHandlers.onMatchFinished)
 
   // Listening for timeout
-  socketStore.socket.on('game:timeout', (payload) => {
+  socketHandlers.onGameTimeout = (payload) => {
     console.log('Game timeout:', payload)
     const isWinner = payload.winner === user.value.id
-    if (isWinner) {
-      addNotification('⏱️ Opponent timed out! You won!', 'success', '✅', 4000)
-    } else {
-      addNotification('⏱️ Time expired! You lost this round', 'error', '⏰', 3000)
+    timeoutResult.value = {
+      isWinner,
+      winner: payload.winner,
+      loser: payload.loser,
     }
+    showTimeoutModal.value = true
     gameFinished.value = true
-  })
+  }
+  socketStore.socket.on('game:timeout', socketHandlers.onGameTimeout)
 
   // Listening for opponent disconnect
-  socketStore.socket.on('game:opponent_disconnected', (payload) => {
+  socketHandlers.onOpponentDisconnected = (payload) => {
     console.log('Opponent disconnected:', payload)
-    addNotification('Opponent disconnected. You won by default!', 'success', '✅', 4000)
+    
+    const isWinner = payload.winner === user.value.id
+    const payout = Number(effectiveBetAmount.value || betAmount.value || 0) * 2
+    addNotification(`Opponent disconnected. You won by default! +${payout} coins`, 'success', '✅', 4000)
+    
+    // Populate game result for display
     gameFinished.value = true
-  })
+    gameResult.value = {
+      winner: isWinner ? myOwner.value : oppOwner.value,
+      myScore: isWinner ? 10 : 0,  // Placeholder - actual scores from game state
+      oppScore: isWinner ? 0 : 10,
+      reason: 'Opponent disconnected'
+    }
+
+    // Award coins to winner (betAmount per player => winner gets 2x stake)
+    if (!coinsAwarded.value) {
+      awardCoinsToWinner(payload.winner, payout)
+      coinsAwarded.value = true
+    }
+    
+    // Auto-redirect to home after 5 seconds if user doesn't click button
+    setTimeout(() => {
+      if (gameFinished.value && gameResult.value?.reason === 'Opponent disconnected') {
+        goHomeAfterDisconnect()
+      }
+    }, 5000)
+  }
+  socketStore.socket.on('game:opponent_disconnected', socketHandlers.onOpponentDisconnected)
 
   // Listening for surrendered
-  socketStore.socket.on('game:surrendered', (payload) => {
+  socketHandlers.onGameSurrendered = (payload) => {
     console.log('Opponent surrendered:', payload)
     const isWinner = payload.winner === user.value.id
+    const payout = Number(effectiveBetAmount.value || betAmount.value || 0) * 2
     if (isWinner) {
-      addNotification('🏁 Opponent surrendered! You won!', 'success', '✅', 4000)
+      addNotification(`🏁 Opponent surrendered! You won! +${payout} coins`, 'success', '✅', 4000)
     } else {
       addNotification('Game ended', 'info', '🏁', 3000)
     }
     gameFinished.value = true
-  })
+    suppressRoundNotifs.value = true
+    suppressMatchNotifs.value = true
+
+    // Award coins to winner (surrender win)
+    if (!coinsAwarded.value) {
+      awardCoinsToWinner(payload.winner, payout)
+      coinsAwarded.value = true
+    }
+  }
+  socketStore.socket.on('game:surrendered', socketHandlers.onGameSurrendered)
 
   // Listening for errors
-  socketStore.socket.on('game:error', (payload) => {
+  socketHandlers.onGameError = (payload) => {
     console.error('Game error:', payload)
     errorMessage.value = payload.message
     isPlayingCard.value = false
     selectedCard.value = null
-  })
+  }
+  socketStore.socket.on('game:error', socketHandlers.onGameError)
 
   // Start turn timer interval - update timer every 100ms
   turnTimerInterval = setInterval(updateTurnTimer, 100)
@@ -489,6 +602,11 @@ onMounted(() => {
 
 // Clean up on unmount
 onBeforeUnmount(() => {
+  // If user leaves mid-game (e.g., back navigation), forfeit the game
+  if (socketStore?.socket && socketStore.socket.connected && gameId.value && !gameFinished.value && !matchFinished.value) {
+    socketStore.socket.emit('game:surrender', { gameId: gameId.value })
+  }
+
   if (turnTimerInterval) {
     clearInterval(turnTimerInterval)
   }
@@ -496,15 +614,54 @@ onBeforeUnmount(() => {
     clearInterval(countdownInterval)
   }
 
-  socketStore.socket.off('game:start')
-  socketStore.socket.off('game:state_update')
-  socketStore.socket.off('game:finished')
-  socketStore.socket.off('match:game_result')
-  socketStore.socket.off('match:finished')
-  socketStore.socket.off('game:timeout')
-  socketStore.socket.off('game:opponent_disconnected')
-  socketStore.socket.off('game:surrendered')
-  socketStore.socket.off('game:error')
+  // Remove socket listeners using stored references for proper cleanup
+  if (socketHandlers.onGameStart) {
+    socketStore.socket.off('game:start', socketHandlers.onGameStart)
+  }
+  if (socketHandlers.onGameStateUpdate) {
+    socketStore.socket.off('game:state_update', socketHandlers.onGameStateUpdate)
+  }
+  if (socketHandlers.onGameFinished) {
+    socketStore.socket.off('game:finished', socketHandlers.onGameFinished)
+  }
+  if (socketHandlers.onMatchGameResult) {
+    socketStore.socket.off('match:game_result', socketHandlers.onMatchGameResult)
+  }
+  if (socketHandlers.onMatchFinished) {
+    socketStore.socket.off('match:finished', socketHandlers.onMatchFinished)
+  }
+  if (socketHandlers.onGameTimeout) {
+    socketStore.socket.off('game:timeout', socketHandlers.onGameTimeout)
+  }
+  if (socketHandlers.onOpponentDisconnected) {
+    socketStore.socket.off('game:opponent_disconnected', socketHandlers.onOpponentDisconnected)
+  }
+  if (socketHandlers.onGameSurrendered) {
+    socketStore.socket.off('game:surrendered', socketHandlers.onGameSurrendered)
+  }
+  if (socketHandlers.onGameError) {
+    socketStore.socket.off('game:error', socketHandlers.onGameError)
+  }
+  
+  // Reset game state to prevent stale data in next game
+  gameState.value = null
+  gameId.value = null
+  matchId.value = null
+  gameResult.value = null
+  gameFinished.value = false
+  matchFinished.value = false
+  matchResult.value = null
+  suppressRoundNotifs.value = false
+  suppressMatchNotifs.value = false
+  selectedCard.value = null
+  isPlayingCard.value = false
+  showSurrenderConfirm.value = false
+  showTimeoutModal.value = false
+  timeoutResult.value = null
+  gameMessage.value = ''
+  errorMessage.value = ''
+  opponentUserId.value = null
+  betAmount.value = 0
   
   // Clean up session storage
   sessionStorage.removeItem('matchBetAmount')
@@ -512,10 +669,6 @@ onBeforeUnmount(() => {
 
 // Handle game finish
 const goHome = () => {
-  router.push('/')
-}
-
-const continueToNextGame = () => {
   router.push('/')
 }
 </script>
@@ -644,11 +797,11 @@ const continueToNextGame = () => {
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">Opponent</span>
               <div
-                v-if="gameState.table.find(p => p.owner === oppOwner)"
+                v-if="gameState.table.find(p => localOwner(p.owner) === 'opponent')"
                 class="w-20 h-28 overflow-hidden shadow"
               >
                 <img
-                  :src="getCardImagePath(gameState.table.find(p => p.owner === oppOwner).card)"
+                  :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'opponent').card)"
                   :alt="`Card`"
                   class="w-full h-full object-cover"
                 />
@@ -659,11 +812,11 @@ const continueToNextGame = () => {
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">You</span>
               <div
-                v-if="gameState.table.find(p => p.owner === myOwner)"
+                v-if="gameState.table.find(p => localOwner(p.owner) === 'me')"
                 class="w-20 h-28 overflow-hidden shadow"
               >
                 <img
-                  :src="getCardImagePath(gameState.table.find(p => p.owner === myOwner).card)"
+                  :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'me').card)"
                   :alt="`Card`"
                   class="w-full h-full object-cover"
                 />
@@ -725,6 +878,65 @@ const continueToNextGame = () => {
             />
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Timeout Modal -->
+    <div
+      v-if="showTimeoutModal && timeoutResult"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
+        <h2 class="text-3xl font-bold text-gray-900">⏰ Time Expired!</h2>
+        <p class="text-xl text-gray-600">
+          {{
+            timeoutResult.isWinner
+              ? '🎉 Opponent timed out! You won!'
+              : '❌ You lost this round!'
+          }}
+        </p>
+        <button
+          @click="goBackFromTimeout"
+          class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800"
+        >
+          Okay
+        </button>
+      </div>
+    </div>
+
+    <!-- Round Finished Modal -->
+    <div
+      v-if="gameFinished && gameResult && !matchFinished"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
+        <h2 class="text-3xl font-bold text-gray-900">Round Finished! 🎯</h2>
+        <p class="text-xl text-gray-600">
+          {{
+            gameResult.winner === myOwner.value
+              ? '🎉 You won this round!'
+              : '❌ You lost this round'
+          }}
+        </p>
+        <div class="text-lg text-gray-700">
+          <p>Opponent's score: <span class="font-bold">{{ gameResult.oppScore }}</span></p>
+          <p>Your score: <span class="font-bold">{{ gameResult.myScore }}</span></p>
+        </div>
+        <!-- Show different button based on whether opponent disconnected -->
+        <button
+          v-if="gameResult.reason === 'Opponent disconnected'"
+          @click="goHomeAfterDisconnect"
+          class="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-800"
+        >
+          🏠 Back to Home
+        </button>
+        <button
+          v-else
+          @click="continueToNextGame"
+          class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800"
+        >
+          Next Round
+        </button>
       </div>
     </div>
 
