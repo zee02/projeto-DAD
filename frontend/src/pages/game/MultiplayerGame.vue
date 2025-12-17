@@ -31,6 +31,18 @@ const gameResult = ref(null)
 const matchFinished = ref(false)
 const matchResult = ref(null)
 const showSurrenderConfirm = ref(false)
+// Fallback-aware effective bet amount for UI messages (e.g., surrender)
+const effectiveBetAmount = computed(() => {
+  // Priority: betAmount (set from game:start) > sessionStorage > match.betPerGame > payload
+  const direct = Number(betAmount.value || 0)
+  if (direct > 0) return direct
+  const fromSession = Number(sessionStorage.getItem('matchBetAmount') || 0)
+  if (fromSession > 0) return fromSession
+  const fromMatch = Number(match.value?.betPerGame || 0)
+  if (fromMatch > 0) return fromMatch
+  const fromPayload = Number(socketStore.lastGameStartPayload?.value?.betAmount || 0)
+  return fromPayload
+})
 
 // Notification system
 const notifications = ref([]) // Array of {id, type, message, icon, duration}
@@ -228,41 +240,26 @@ const goBack = () => {
   router.push('/')
 }
 
-// Deduct coins at game start
-const deductCoinsAtGameStart = async () => {
-  try {
-    // Deduct coins from player's balance
-    await apiStore.post('/coins/deduct', {
-      amount: betAmount.value,
-      reason: `Multiplayer bet - ${gameType.value} cards, match ${matchId.value}`
-    })
-    console.log('Coins deducted:', betAmount.value)
-    
-    // Refrescar o user para atualizar moedas
-    await authStore.refreshUser()
-  } catch (error) {
-    console.error('Failed to deduct coins:', error)
-    errorMessage.value = 'Failed to deduct coins. Please try again.'
-  }
+// Track if we already deducted coins for this game
+const coinsAlreadyDeducted = ref(false)
+
+// Deduct coins locally at game start (reflect immediately in navbar)
+const deductCoinsAtGameStart = () => {
+  if (coinsAlreadyDeducted.value || !user.value) return
+  const current = Number(user.value.coins_balance || 0)
+  const next = Math.max(0, current - Number(betAmount.value || 0))
+  authStore.setUser({ ...user.value, coins_balance: next })
+  deductedGamesCount.value = 1
+  coinsAlreadyDeducted.value = true
 }
 
-// Award coins to winner
-const awardCoinsToWinner = async (winnerId, amount) => {
-  try {
-    await apiStore.post('/coins/award', {
-      user_id: winnerId,
-      amount: amount,
-      reason: `Multiplayer game win - ${gameType.value} cards, match ${matchId.value}`
-    })
-    console.log('Coins awarded:', amount)
-    
-    // Se o vencedor somos nós, refrescar o user para atualizar moedas
-    if (winnerId === user.value.id) {
-      await authStore.refreshUser()
-    }
-  } catch (error) {
-    console.error('Failed to award coins:', error)
-  }
+// Award coins locally to winner (reflect immediately in navbar)
+const awardCoinsToWinner = (winnerId, amount) => {
+  if (!user.value) return
+  if (winnerId !== user.value.id) return
+  const current = Number(user.value.coins_balance || 0)
+  const next = current + Number(amount || 0)
+  authStore.setUser({ ...user.value, coins_balance: next })
 }
 
 // Salvar match na database
@@ -367,6 +364,17 @@ onMounted(() => {
     console.log('Match game result:', payload)
     match.value = payload.match
     gameMessage.value = `Game result: ${payload.winner.userId === user.value.id ? 'You won! 🎉' : 'You lost'}`
+    // Deduct additional bet(s) for completed games beyond the first
+    const gamesPlayed = Array.isArray(payload.match?.games) ? payload.match.games.length : 0
+    const betPerGame = Number(payload.match?.betPerGame || betAmount.value || 0)
+    if (gamesPlayed > deductedGamesCount.value && betPerGame > 0 && user.value) {
+      const additional = gamesPlayed - deductedGamesCount.value
+      const totalDeduct = additional * betPerGame
+      const current = Number(user.value.coins_balance || 0)
+      const next = Math.max(0, current - totalDeduct)
+      authStore.setUser({ ...user.value, coins_balance: next })
+      deductedGamesCount.value = gamesPlayed
+    }
   })
 
   // Listening for match finished
@@ -391,11 +399,10 @@ onMounted(() => {
     const winnerId = payload.winner === 'player1' 
       ? payload.match.player1.userId 
       : payload.match.player2.userId
-    const coinsWon = payload.winner === 'player1'
-      ? payload.match.player1.coinsWon
-      : payload.match.player2.coinsWon
-    
-    awardCoinsToWinner(winnerId, coinsWon)
+    // Winner gets the full pot
+    const totalPot = Number(payload.totalBet || 0)
+    awardCoinsToWinner(winnerId, totalPot)
+    deductedGamesCount.value = 0
     
     // Salvar match na database
     saveMatchToDatabase(payload)
@@ -498,6 +505,9 @@ onBeforeUnmount(() => {
   socketStore.socket.off('game:opponent_disconnected')
   socketStore.socket.off('game:surrendered')
   socketStore.socket.off('game:error')
+  
+  // Clean up session storage
+  sessionStorage.removeItem('matchBetAmount')
 })
 
 // Handle game finish
@@ -753,7 +763,7 @@ const continueToNextGame = () => {
         <h2 class="text-3xl font-bold text-gray-900">Surrender Game?</h2>
         <div class="text-lg text-gray-700 space-y-2">
           <p>Are you sure you want to surrender?</p>
-          <p class="text-red-600 font-bold text-2xl">You will lose {{ betAmount }} coins 💰</p>
+          <p class="text-red-600 font-bold text-2xl">You will lose {{ effectiveBetAmount }} coins 💰</p>
         </div>
         <div class="flex gap-3">
           <button

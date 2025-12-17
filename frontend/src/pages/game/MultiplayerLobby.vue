@@ -16,6 +16,7 @@ const selectedBet = ref(2)
 const gameType = ref(route.query.mode || '3')
 const betOptions = [2, 5, 10]
 const leftLobby = ref(false)
+const coinsRefunded = ref(false) // Track if coins were already refunded
 
 // UI state
 const isLoading = ref(false)
@@ -37,6 +38,14 @@ const joinLobby = async () => {
   errorMessage.value = ''
 
   try {
+    // Reset refund flag for new lobby session
+    coinsRefunded.value = false
+    
+    // Immediately deduct coins from player's balance (optimistic update)
+    const currentCoins = Number(user.value.coins_balance || 0)
+    const newCoins = Math.max(0, currentCoins - Number(selectedBet.value || 0))
+    authStore.setUser({ ...user.value, coins_balance: newCoins })
+
     socketStore.socket.emit('lobby:join', {
       userId: user.value.id,
       name: user.value.name,
@@ -48,6 +57,8 @@ const joinLobby = async () => {
     waitingForOpponent.value = true
     lobbyId.value = 'matching...'
     successMessage.value = `Waiting for opponent... (Bet: ${selectedBet.value} coins)`
+    // Store bet amount for MultiplayerGame to access
+    sessionStorage.setItem('matchBetAmount', String(selectedBet.value))
   } catch (error) {
     errorMessage.value = error.message || 'Failed to join lobby'
   } finally {
@@ -58,6 +69,16 @@ const joinLobby = async () => {
 // Cancel waiting
 const cancelWaiting = () => {
   socketStore.socket.emit('lobby:leave')
+  
+  // Refund coins since game hasn't started (only once)
+  if (!coinsRefunded.value) {
+    const currentCoins = Number(user.value?.coins_balance || 0)
+    const refundCoins = Number(selectedBet.value || 0)
+    const newCoins = currentCoins + refundCoins
+    authStore.setUser({ ...user.value, coins_balance: newCoins })
+    coinsRefunded.value = true
+  }
+  
   waitingForOpponent.value = false
   lobbyId.value = null
   successMessage.value = ''
@@ -89,6 +110,14 @@ onMounted(() => {
   // Listening for errors
   socketStore.socket.on('error', (payload) => {
     errorMessage.value = payload.message
+    if (waitingForOpponent.value && !coinsRefunded.value) {
+      // Refund coins on error (only once)
+      const currentCoins = Number(user.value?.coins_balance || 0)
+      const refundCoins = Number(selectedBet.value || 0)
+      const newCoins = currentCoins + refundCoins
+      authStore.setUser({ ...user.value, coins_balance: newCoins })
+      coinsRefunded.value = true
+    }
     waitingForOpponent.value = false
   })
 
@@ -105,6 +134,15 @@ onMounted(() => {
     console.log('Opponent left lobby:', payload)
     errorMessage.value = payload.message
     waitingForOpponent.value = false
+    
+    // Refund coins since game didn't start (only once)
+    if (!coinsRefunded.value) {
+      const currentCoins = Number(user.value?.coins_balance || 0)
+      const refundCoins = Number(selectedBet.value || 0)
+      const newCoins = currentCoins + refundCoins
+      authStore.setUser({ ...user.value, coins_balance: newCoins })
+      coinsRefunded.value = true
+    }
     
     // Auto close after 3 seconds
     setTimeout(() => {
