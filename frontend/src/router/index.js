@@ -17,6 +17,8 @@ const AdminGames = () => import('@/pages/admin/GamesAdmin.vue')
 const Leaderboards = () => import('@/pages/stats/Leaderboards.vue')
 const AnonymousStats = () => import('@/pages/stats/AnonymousStats.vue')
 const AdminStats = () => import('@/pages/admin/AdminStats.vue')
+const HistoryPage = () => import('@/pages/HistoryPage.vue')
+const BlockedUserPage = () => import('@/pages/BlockedUserPage.vue')
 
 // Navigation guard to protect admin routes using client-side check
 // (server-side middleware also enforces authorization). We rely on localStorage
@@ -134,7 +136,7 @@ const router = createRouter({
     {
       path: '/history',
       name: 'history',
-    //    component: HistoryPage,
+      component: HistoryPage,
       meta: { requiresAuth: true }
     },
     {
@@ -158,8 +160,12 @@ const router = createRouter({
     {
       path: '/blocked',
       name: 'blocked',
-    //  component: BlockedUserPage,
+      component: BlockedUserPage,
     },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
+    }
   ],
 })
 
