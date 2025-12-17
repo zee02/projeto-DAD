@@ -94,10 +94,22 @@ export class BiscaGameEngine {
     }
 
     const [card1, card2] = this.table;
-    const winner = this.doesSecondCardWin(card1, card2) ? 'player2' : 'player1';
+    const secondWins = this.doesSecondCardWin(card1, card2);
+    const winner = secondWins ? 'player2' : 'player1';
 
     // Contar pontos do trick
     const trickPoints = this.getCardValue(card1) + this.getCardValue(card2);
+
+    // Debug logging for trump card logic
+    const card1IsTrump = card1.suit === this.trumpSuit;
+    const card2IsTrump = card2.suit === this.trumpSuit;
+    console.log(
+      `[Trick Resolution] Trump: ${this.trumpSuit} | ` +
+      `Card1: ${card1.id} (trump: ${card1IsTrump}) | ` +
+      `Card2: ${card2.id} (trump: ${card2IsTrump}) | ` +
+      `Winner: ${winner} (${secondWins ? 'secondWins' : 'firstWins'}) | ` +
+      `Points: ${trickPoints}`
+    );
 
     if (winner === 'player1') {
       this.player1Tricks.push({ cards: [card1, card2], points: trickPoints });
@@ -151,19 +163,27 @@ export class BiscaGameEngine {
   }
 
   doesSecondCardWin(firstCard, secondCard) {
-    // Segunda carta bate primeira se:
-    // 1. Mesmo naipe e valor mais alto
-    // 2. Trunfo vs não-trunfo
+    // Trump rules in Bisca:
+    // 1. Trump always beats non-trump (regardless of value)
+    // 2. Same suit: higher-value card wins
+    // 3. Different non-trump suits: higher-value card wins
 
-    if (secondCard.suit === this.trumpSuit && firstCard.suit !== this.trumpSuit) {
-      return true; // Segunda é trunfo, primeira não
+    const firstIsTrump = firstCard.suit === this.trumpSuit;
+    const secondIsTrump = secondCard.suit === this.trumpSuit;
+
+    // If second is trump and first is not, second wins
+    if (secondIsTrump && !firstIsTrump) {
+      return true;
     }
 
-    if (secondCard.suit === firstCard.suit) {
-      return this.getCardValue(secondCard) > this.getCardValue(firstCard);
+    // If first is trump and second is not, first wins (second doesn't win)
+    if (firstIsTrump && !secondIsTrump) {
+      return false;
     }
 
-    return false;
+    // Both trump or both non-trump: compare by value
+    // This handles both: same suit comparison AND different non-trump suits
+    return this.getCardValue(secondCard) > this.getCardValue(firstCard);
   }
 
   getCardValue(card) {
@@ -177,27 +197,25 @@ export class BiscaGameEngine {
   }
 
   computeMarks() {
-    const markThresholds = { Capote: 91, Flag: 120, Risca: 61 };
+    // Bisca mark awards per game:
+    // 120 points = Bandeira (full match win, 2 marks)
+    // 91-119 points = Capote (2 marks)
+    // 61-90 points = Risca/Moça (1 mark)
+    // 0-60 points = No mark (0 marks)
+    
+    this.marks.player1 = this._calculateMarks(this.scores.player1);
+    this.marks.player2 = this._calculateMarks(this.scores.player2);
+  }
 
-    if (this.scores.player1 >= markThresholds.Capote) {
-      this.marks.player1 |= 1; // Bit 0: Capote
+  _calculateMarks(score) {
+    if (score >= 120) {
+      return 2; // Bandeira
+    } else if (score >= 91) {
+      return 2; // Capote
+    } else if (score >= 61) {
+      return 1; // Risca
     }
-    if (this.scores.player1 >= markThresholds.Flag) {
-      this.marks.player1 |= 2; // Bit 1: Flag
-    }
-    if (this.scores.player1 >= markThresholds.Risca) {
-      this.marks.player1 |= 4; // Bit 2: Risca
-    }
-
-    if (this.scores.player2 >= markThresholds.Capote) {
-      this.marks.player2 |= 1;
-    }
-    if (this.scores.player2 >= markThresholds.Flag) {
-      this.marks.player2 |= 2;
-    }
-    if (this.scores.player2 >= markThresholds.Risca) {
-      this.marks.player2 |= 4;
-    }
+    return 0;
   }
 
   getState() {
