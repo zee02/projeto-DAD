@@ -211,12 +211,12 @@ const viewGame = (game) => {
   toast.info(`Viewing game #${game.id}`)
   // TODO: Open game detail modal
 }
-viewReplay = (gameId) => {
+
+const viewReplay = (gameId) => {
   router.push(`/game-replay/${gameId}`)
 }
 
-const 
-const fetch = async () => {
+const fetchGames = async () => {
   isLoading.value = true
   try {
     const res = await api.getGames(true)
@@ -230,7 +230,7 @@ const fetch = async () => {
   }
 }
 
-onMounted(fetch)
+onMounted(fetchGames)
 </script>
 
 <style scoped>
