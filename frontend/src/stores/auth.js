@@ -10,6 +10,15 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('auth_token') || null)
   const user = ref(JSON.parse(localStorage.getItem('auth_user') || 'null'))
 
+  // Ensure axios Authorization header is set on app reload if a token exists
+  if (token.value) {
+    try {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+    } catch (e) {
+      // ignore header set errors
+    }
+  }
+
   const isLoggedIn = computed(() => {
     return currentUser.value !== undefined || token.value !== null
   })
@@ -60,6 +69,11 @@ export const useAuthStore = defineStore('auth', () => {
   const setToken = (newToken) => {
     token.value = newToken
     localStorage.setItem('auth_token', newToken)
+    try {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+    } catch (e) {
+      // ignore
+    }
   }
 
   const setUser = (newUser) => {
