@@ -155,6 +155,11 @@ export const useAPIStore = defineStore('api', () => {
     return axios.get(`${API_BASE_URL}/games/${gameId}`)
   }
 
+  const postSaveGame = async (gameData) => {
+    const response = await axios.post(`${API_BASE_URL}/games`, gameData)
+    return response.data
+  }
+
   const getOverviewStats = () => {
     return axios.get(`${API_BASE_URL}/stats/overview`)
   }
@@ -217,6 +222,7 @@ export const useAPIStore = defineStore('api', () => {
     getMyGames,
     getGameReplay,
     getGameDetails,
+    postSaveGame,
     getOverviewStats,
     getAnonymousStats,
     // Multiplayer matches

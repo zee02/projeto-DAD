@@ -7,6 +7,11 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->only(['store', 'show']);
+    }
+
     /**
      * Display a listing of the resource.
      */
