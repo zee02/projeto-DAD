@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'payment_gateway' => [
+        // Base URL for the external Payments API (without trailing slash)
+        'url' => env('PAYMENTS_API_URL', 'https://dad-payments-api.vercel.app'),
+        // Optional auth token if the gateway requires it (not used by default)
+        'token' => env('PAYMENTS_API_TOKEN', null),
+    ],
+
 ];

@@ -34,6 +34,7 @@ class CoinPurchaseController extends Controller
             if (!$paymentResult['success']) {
                 return response()->json([
                     'message' => $paymentResult['message'],
+                    'errors' => $paymentResult['errors'] ?? null,
                 ], 422);
             }
 

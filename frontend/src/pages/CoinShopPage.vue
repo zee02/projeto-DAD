@@ -53,6 +53,34 @@
                   {{ amount }}€ → {{ amount * 10 }} coins
                 </button>
               </div>
+
+              <!-- Custom Amount -->
+              <div class="mt-3 pt-3 border-t border-border">
+                <label class="block text-sm font-medium text-foreground mb-2">Or enter custom amount</label>
+                <div class="flex gap-2">
+                  <input
+                    v-model.number="customAmount"
+                    type="number"
+                    min="1"
+                    max="99"
+                    placeholder="1-99€"
+                    class="flex-1 px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+                    @keyup.enter="setCustomAmount"
+                  />
+                  <button
+                    @click="setCustomAmount"
+                    class="px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground font-semibold rounded-lg transition"
+                  >
+                    Set
+                  </button>
+                </div>
+                <p v-if="customAmount" class="mt-2 text-sm text-muted-foreground">
+                  {{ customAmount }}€ → {{ customAmount * 10 }} coins
+                </p>
+                <p v-if="customAmountError" class="mt-2 text-sm text-destructive">{{ customAmountError }}</p>
+              </div>
+
+              <p v-if="errors.euros" class="mt-2 text-sm text-destructive">{{ formatError(errors.euros) }}</p>
             </div>
 
             <!-- Payment Type -->
@@ -70,6 +98,7 @@
                 <option value="MB">Multibanco</option>
               </select>
               <p class="text-xs text-muted-foreground mt-2">{{ getPaymentHint(formData.payment_type) }}</p>
+              <p v-if="errors.payment_type" class="mt-2 text-sm text-destructive">{{ formatError(errors.payment_type) }}</p>
             </div>
 
             <!-- Payment Reference -->
@@ -82,6 +111,7 @@
                 class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
               />
               <p class="text-xs text-muted-foreground mt-1">{{ getPaymentFormat(formData.payment_type) }}</p>
+              <p v-if="errors.payment_reference" class="mt-1 text-sm text-destructive">{{ formatError(errors.payment_reference) }}</p>
             </div>
 
             <!-- Buy Button -->
@@ -172,7 +202,9 @@ export default {
   name: 'CoinShopPage',
   data() {
     return {
-      amounts: [5, 10, 25, 50, 100, 500],
+      amounts: [5, 10, 25, 50, 99],
+      customAmount: null,
+      customAmountError: '',
       formData: {
         euros: 10,
         payment_type: 'MBWAY',
@@ -192,7 +224,9 @@ export default {
     },
     isFormValid() {
       return (
-        this.formData.euros &&
+        Number.isInteger(this.formData.euros) &&
+        this.formData.euros >= 1 &&
+        this.formData.euros <= 99 &&
         this.formData.payment_type &&
         this.formData.payment_reference &&
         this.formData.payment_reference.length > 0
@@ -314,6 +348,41 @@ export default {
         hour: '2-digit',
         minute: '2-digit',
       })
+    },
+
+    formatError(err) {
+      if (!err) return ''
+      return Array.isArray(err) ? err[0] : err
+    },
+
+    setCustomAmount() {
+      this.customAmountError = ''
+      const amount = this.customAmount
+
+      if (amount === null || amount === undefined || amount === '') {
+        this.customAmountError = 'Please enter an amount'
+        return
+      }
+
+      if (!Number.isInteger(amount)) {
+        this.customAmountError = 'Amount must be a whole number (no decimals)'
+        return
+      }
+
+      if (amount < 1) {
+        this.customAmountError = 'Minimum amount is €1'
+        return
+      }
+
+      if (amount > 99) {
+        this.customAmountError = 'Maximum amount is €99'
+        return
+      }
+
+      // Valid custom amount, set it
+      this.formData.euros = amount
+      this.customAmount = null
+      this.customAmountError = ''
     },
   },
 }

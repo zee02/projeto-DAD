@@ -14,7 +14,7 @@ class CoinPurchaseRequest extends FormRequest
     public function rules()
     {
         return [
-            'euros' => 'required|numeric|min:1|max:500',
+            'euros' => 'required|integer|min:1|max:99',
             'payment_type' => 'required|in:MBWAY,PAYPAL,IBAN,MB,VISA',
             'payment_reference' => 'required|string|max:30',
         ];
@@ -74,9 +74,9 @@ class CoinPurchaseRequest extends FormRequest
     {
         return [
             'euros.required' => 'Amount in euros is required.',
-            'euros.numeric' => 'Amount must be a number.',
+            'euros.integer' => 'Amount must be an integer.',
             'euros.min' => 'Minimum amount is €1.',
-            'euros.max' => 'Maximum amount is €500.',
+            'euros.max' => 'Maximum amount is €99.',
             'payment_type.required' => 'Payment type is required.',
             'payment_type.in' => 'Invalid payment type.',
             'payment_reference.required' => 'Payment reference is required.',

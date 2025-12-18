@@ -16,8 +16,7 @@ class PaymentGatewayService
     public function processPayment($paymentData)
     {
         try {
-            // Simulated API call to external payment gateway
-            // In production, this would call a real payment provider
+            // Call external payment gateway (debit API)
             $response = $this->callPaymentGateway($paymentData);
 
             if ($response['success']) {
@@ -41,36 +40,53 @@ class PaymentGatewayService
     }
 
     /**
-     * Simulated payment gateway API call
+     * External payment gateway API call (debit)
      * 
      * @param array $paymentData
      * @return array
      */
     private function callPaymentGateway($paymentData)
     {
-        // In a real scenario, you would do something like:
-        // $response = Http::withHeaders([
-        //     'Authorization' => 'Bearer ' . config('services.payment_gateway.token'),
-        // ])->post(config('services.payment_gateway.url') . '/process', $paymentData);
-        
-        // For now, we simulate the response
-        // Success rate: 95% (5% of payments fail randomly)
-        $successRate = rand(1, 100);
-        
-        if ($successRate <= 95) {
-            // Simulate successful payment
+        $payload = [
+            'type' => $paymentData['payment_type'] ?? null,
+            'reference' => $paymentData['payment_reference'] ?? null,
+            'value' => isset($paymentData['euros']) ? (int)$paymentData['euros'] : null,
+        ];
+
+        $baseUrl = config('services.payment_gateway.url');
+        $token = config('services.payment_gateway.token');
+
+        $http = Http::acceptJson();
+        if (!empty($token)) {
+            $http = $http->withToken($token);
+        }
+
+        $response = $http->post(rtrim($baseUrl, '/') . '/api/debit', $payload);
+
+        if ($response->status() === 201) {
+            $json = $response->json();
             return [
                 'success' => true,
-                'transaction_id' => $this->generateTransactionId(),
-                'message' => 'Payment authorized',
-            ];
-        } else {
-            // Simulate payment failure
-            return [
-                'success' => false,
-                'message' => 'Payment declined by card issuer',
+                'transaction_id' => $json['id'] ?? $json['transaction_id'] ?? null,
+                'message' => $json['message'] ?? 'Payment authorized',
             ];
         }
+
+        if ($response->status() === 422) {
+            $json = $response->json();
+            $message = $json['message'] ?? 'Payment validation failed';
+            $errors = $json['errors'] ?? null;
+            return [
+                'success' => false,
+                'message' => $message,
+                'errors' => $errors,
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => 'Payment gateway returned status ' . $response->status(),
+        ];
     }
 
     /**
