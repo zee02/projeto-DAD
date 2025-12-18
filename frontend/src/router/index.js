@@ -18,6 +18,7 @@ const Leaderboards = () => import('@/pages/stats/Leaderboards.vue')
 const AnonymousStats = () => import('@/pages/stats/AnonymousStats.vue')
 const AdminStats = () => import('@/pages/admin/AdminStats.vue')
 const HistoryPage = () => import('@/pages/HistoryPage.vue')
+const TransactionsPage = () => import('@/pages/TransactionsPage.vue')
 const BlockedUserPage = () => import('@/pages/BlockedUserPage.vue')
 
 // Navigation guard to protect admin routes using client-side check
@@ -127,6 +128,11 @@ const router = createRouter({
     {
       path: '/leaderboards',
       component: Leaderboards,
+    },
+    {
+      path: '/transactions',
+      component: TransactionsPage,
+      meta: { requiresAuth: true },
     },
     {
       path: '/stats',

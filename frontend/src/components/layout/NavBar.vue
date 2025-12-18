@@ -23,6 +23,10 @@
                                 <RouterLink to="/history">Game History</RouterLink>
                             </NavigationMenuLink>
 
+                            <NavigationMenuLink v-if="userLoggedIn && user && user.type !== 'A'" as-child>
+                                <RouterLink to="/transactions">Transaction History</RouterLink>
+                            </NavigationMenuLink>
+
                             <NavigationMenuLink v-if="userLoggedIn && user && user.type === 'A'" as-child>
                                 <RouterLink to="/admin/analytics">Admin Analytics</RouterLink>
                             </NavigationMenuLink>
