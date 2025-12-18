@@ -125,9 +125,6 @@
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0" @click="viewGame(g)">
                     👁
                   </Button>
-                  <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-destructive hover:bg-destructive/10">
-                    🗑
-                  </Button>
                 </div>
               </TableCell>
             </TableRow>

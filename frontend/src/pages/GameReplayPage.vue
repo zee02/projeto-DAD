@@ -175,7 +175,7 @@ const fetchGameReplay = async () => {
 onMounted(fetchGameReplay)
 
 const goBack = () => {
-  router.push('/history')
+  router.push('/admin/games')
 }
 
 const formatDate = (dateString) => {
