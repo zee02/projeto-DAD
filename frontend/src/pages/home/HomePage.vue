@@ -102,8 +102,8 @@ const goToStats = () => {
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div>
-        <h1 class="text-4xl font-extrabold text-gray-900">Bisca</h1>
-        <p class="mt-2 text-base text-gray-600">Play, compete in rankings and earn coins!</p>
+        <h1 class="text-4xl font-extrabold text-foreground">Bisca</h1>
+        <p class="mt-2 text-base text-muted-foreground">Play, compete in rankings and earn coins!</p>
       </div>
     </div>
 
@@ -113,10 +113,10 @@ const goToStats = () => {
       <div class="lg:col-span-2 space-y-8">
         <!-- Play Card -->
        <!-- Play Card -->
-<div v-if="user?.type !== 'A'" class="bg-white shadow-lg rounded-2xl p-8">
+<div v-if="user?.type !== 'A'" class="bg-card text-card-foreground shadow-lg rounded-2xl p-8">
   <div class="mb-6">
-    <h2 class="text-2xl font-bold text-gray-900">Play</h2>
-    <p class="mt-1 text-gray-600">Choose a mode and start a match</p>
+    <h2 class="text-2xl font-bold text-card-foreground">Play</h2>
+    <p class="mt-1 text-muted-foreground">Choose a mode and start a match</p>
   </div>
 
   <!-- 4 Game Mode Buttons -->
@@ -124,48 +124,48 @@ const goToStats = () => {
 
     <!-- Bisca 3 - Singleplayer -->
     <button @click="startSingleplayer('3')"
-      class="group bg-blue-50 border-2 border-blue-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      class="group bg-secondary/50 border-2 border-border rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition hover:bg-secondary">
       <div class="flex items-center gap-4">
-        <div class="p-3 rounded-lg bg-blue-500 text-white group-hover:scale-110 transition">🎮</div>
+        <div class="p-3 rounded-lg bg-primary text-primary-foreground group-hover:scale-110 transition">🎮</div>
         <div>
-          <div class="font-semibold text-gray-900">Bisca 3 Cards</div>
-          <div class="text-sm text-gray-600">Singleplayer</div>
+          <div class="font-semibold text-card-foreground">Bisca 3 Cards</div>
+          <div class="text-sm text-muted-foreground">Singleplayer</div>
         </div>
       </div>
     </button>
 
     <!-- Bisca 9 - Singleplayer -->
     <button @click="startSingleplayer('9')"
-      class="group bg-purple-50 border-2 border-purple-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      class="group bg-accent/30 border-2 border-border rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition hover:bg-accent/50">
       <div class="flex items-center gap-4">
-        <div class="p-3 rounded-lg bg-purple-500 text-white group-hover:scale-110 transition">🧩</div>
+        <div class="p-3 rounded-lg bg-primary text-primary-foreground group-hover:scale-110 transition">🧩</div>
         <div>
-          <div class="font-semibold text-gray-900">Bisca 9 Cards</div>
-          <div class="text-sm text-gray-600">Singleplayer</div>
+          <div class="font-semibold text-card-foreground">Bisca 9 Cards</div>
+          <div class="text-sm text-muted-foreground">Singleplayer</div>
         </div>
       </div>
     </button>
 
     <!-- Bisca 3 - Multiplayer -->
     <button @click="startMultiplayer('3')"
-      class="group bg-green-50 border-2 border-green-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      class="group bg-secondary/30 border-2 border-border rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition hover:bg-secondary/50">
       <div class="flex items-center gap-4">
-        <div class="p-3 rounded-lg bg-green-500 text-white group-hover:scale-110 transition">⚔️</div>
+        <div class="p-3 rounded-lg bg-primary text-primary-foreground group-hover:scale-110 transition">⚔️</div>
         <div>
-          <div class="font-semibold text-gray-900">Bisca 3 Cards</div>
-          <div class="text-sm text-gray-600">Multiplayer</div>
+          <div class="font-semibold text-card-foreground">Bisca 3 Cards</div>
+          <div class="text-sm text-muted-foreground">Multiplayer</div>
         </div>
       </div>
     </button>
 
     <!-- Bisca 9 - Multiplayer -->
     <button @click="startMultiplayer('9')"
-      class="group bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition">
+      class="group bg-accent/30 border-2 border-border rounded-xl p-5 hover:shadow-xl hover:-translate-y-1 transition hover:bg-accent/50">
       <div class="flex items-center gap-4">
-        <div class="p-3 rounded-lg bg-yellow-500 text-white group-hover:scale-110 transition">🏆</div>
+        <div class="p-3 rounded-lg bg-primary text-primary-foreground group-hover:scale-110 transition">🏆</div>
         <div>
-          <div class="font-semibold text-gray-900">Bisca 9 Cards</div>
-          <div class="text-sm text-gray-600">Multiplayer</div>
+          <div class="font-semibold text-card-foreground">Bisca 9 Cards</div>
+          <div class="text-sm text-muted-foreground">Multiplayer</div>
         </div>
       </div>
     </button>
@@ -175,21 +175,21 @@ const goToStats = () => {
 
 
         <!-- Highlights Card -->
-        <div class="bg-white shadow-lg rounded-2xl p-8">
+        <div class="bg-card text-card-foreground shadow-lg rounded-2xl p-8">
           <div class="flex items-center justify-between mb-2">
-            <h3 class="text-2xl font-bold text-gray-900">Top Players</h3>
+            <h3 class="text-2xl font-bold text-card-foreground">Top Players</h3>
           </div>
-          <p class="text-gray-600 mb-6">Check out the best players and stand out in leaderboards.</p>
+          <p class="text-muted-foreground mb-6">Check out the best players and stand out in leaderboards.</p>
 
           <!-- Mode Switcher Buttons -->
-          <div class="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
+          <div class="flex gap-2 mb-6 p-1 bg-secondary rounded-lg">
             <button 
               @click="switchLeaderboardMode('overall')"
               :class="[
                 'flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all duration-300',
                 leaderboardMode === 'overall' 
-                  ? 'bg-white text-indigo-600 shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-card text-primary shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
               ]">
               Overall
             </button>
@@ -198,8 +198,8 @@ const goToStats = () => {
               :class="[
                 'flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all duration-300',
                 leaderboardMode === 'multiplayer' 
-                  ? 'bg-white text-indigo-600 shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-card text-primary shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
               ]">
               Multiplayer
             </button>
@@ -208,8 +208,8 @@ const goToStats = () => {
               :class="[
                 'flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all duration-300',
                 leaderboardMode === 'singleplayer' 
-                  ? 'bg-white text-indigo-600 shadow-md' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-card text-primary shadow-md' 
+                  : 'text-muted-foreground hover:text-foreground'
               ]">
               Singleplayer
             </button>
@@ -217,13 +217,13 @@ const goToStats = () => {
 
           <!-- Loading State -->
           <div v-if="isLoadingLeaderboard" class="text-center py-12">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            <p class="text-gray-500 text-sm mt-3">Loading rankings...</p>
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <p class="text-muted-foreground text-sm mt-3">Loading rankings...</p>
           </div>
 
           <!-- Empty State -->
           <div v-else-if="leaderboard.length === 0" class="text-center py-8">
-            <div class="text-gray-400 text-sm">No data yet.</div>
+            <div class="text-muted-foreground text-sm">No data yet.</div>
           </div>
 
           <!-- Leaderboard List -->
@@ -234,10 +234,10 @@ const goToStats = () => {
               class="relative group"
             >
               <!-- Main Player Card -->
-              <div class="flex items-center justify-between p-4 rounded-xl hover:bg-gray-50 transition-all duration-300 border-2"
+              <div class="flex items-center justify-between p-4 rounded-xl hover:bg-secondary/50 transition-all duration-300 border-2"
                 :class="{
                   'border-yellow-300 bg-yellow-50': index === 0,
-                  'border-gray-300 bg-gray-50': index === 1,
+                  'border-border bg-secondary': index === 1,
                   'border-orange-300 bg-orange-50': index === 2,
                 }">
                 <div class="flex items-center gap-4">
@@ -253,19 +253,19 @@ const goToStats = () => {
                   
                   <!-- Player Info -->
                   <div>
-                    <div class="font-bold text-gray-900 text-lg">{{ p.nickname || p.name }}</div>
+                    <div class="font-bold text-card-foreground text-lg">{{ p.nickname || p.name }}</div>
                     <div class="flex items-center gap-3 mt-1">
-                      <span class="text-sm font-semibold text-indigo-600 flex items-center gap-1">
+                      <span class="text-sm font-semibold text-primary flex items-center gap-1">
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
                         {{ p.count }}
                       </span>
-                      <span class="text-xs text-gray-500">|</span>
-                      <span class="text-xs text-gray-600 flex items-center gap-1">
+                      <span class="text-xs text-muted-foreground">|</span>
+                      <span class="text-xs text-muted-foreground flex items-center gap-1">
                         <span class="font-semibold">🎯</span> {{ p.capotes }} capotes
                       </span>
-                      <span class="text-xs text-gray-600 flex items-center gap-1">
+                      <span class="text-xs text-muted-foreground flex items-center gap-1">
                         <span class="font-semibold">🏴</span> {{ p.flags }} flags
                       </span>
                     </div>
@@ -280,7 +280,7 @@ const goToStats = () => {
             </div>
           </div>
 
-          <button @click="goToLeaderboards" class="w-full mt-6 text-indigo-600 font-semibold hover:text-indigo-700 transition-colors flex items-center justify-center gap-2 group">
+          <button @click="goToLeaderboards" class="w-full mt-6 text-primary font-semibold hover:text-primary/80 transition-colors flex items-center justify-center gap-2 group">
             View Full Leaderboard 
             <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
@@ -292,33 +292,33 @@ const goToStats = () => {
       <!-- Right Sidebar -->
       <aside class="space-y-6">
         <!-- Quick Links Card -->
-        <div class="bg-white shadow-lg rounded-2xl p-6">
-          <h4 class="text-lg font-bold text-gray-900 mb-4">Quick Links</h4>
+        <div class="bg-card text-card-foreground shadow-lg rounded-2xl p-6">
+          <h4 class="text-lg font-bold text-card-foreground mb-4">Quick Links</h4>
           <div class="space-y-2">
             <button @click="goToLeaderboards" 
-              class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 flex items-center gap-3 group">
-              <svg class="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary transition-colors border border-transparent hover:border-border flex items-center gap-3 group">
+              <svg class="w-5 h-5 text-primary group-hover:text-primary/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
               <div>
-                <div class="font-semibold text-gray-900">Leaderboards</div>
-                <div class="text-xs text-gray-600">View rankings</div>
+                <div class="font-semibold text-card-foreground">Leaderboards</div>
+                <div class="text-xs text-muted-foreground">View rankings</div>
               </div>
             </button>
 
             <button @click="goToStats" 
-              class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 flex items-center gap-3 group">
-              <svg class="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary transition-colors border border-transparent hover:border-border flex items-center gap-3 group">
+              <svg class="w-5 h-5 text-primary group-hover:text-primary/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
               <div>
-                <div class="font-semibold text-gray-900">Statistics</div>
-                <div class="text-xs text-gray-600">Anonymous overview</div>
+                <div class="font-semibold text-card-foreground">Statistics</div>
+                <div class="text-xs text-muted-foreground">Anonymous overview</div>
               </div>
             </button>
 
             <button v-if="user" @click="goToHistory" 
-              class="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200 flex items-center gap-3 group">
-              <svg class="w-5 h-5 text-indigo-600 group-hover:text-indigo-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              class="w-full text-left px-4 py-3 rounded-lg hover:bg-secondary transition-colors border border-transparent hover:border-border flex items-center gap-3 group">
+              <svg class="w-5 h-5 text-primary group-hover:text-primary/80" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
               <div>
-                <div class="font-semibold text-gray-900">Game History</div>
-                <div class="text-xs text-gray-600">View past games</div>
+                <div class="font-semibold text-card-foreground">Game History</div>
+                <div class="text-xs text-muted-foreground">View past games</div>
               </div>
             </button>
           </div>
@@ -327,9 +327,9 @@ const goToStats = () => {
 
 
         <!-- Info Card -->
-        <div class="bg-linear-to-br from-indigo-50 to-indigo-100 border border-indigo-200 rounded-2xl p-6">
-          <h4 class="text-lg font-bold text-indigo-900 mb-2">Welcome!</h4>
-          <p class="text-indigo-800 text-sm">Compete in leaderboards, earn coins and climb the rankings.</p>
+        <div class="bg-primary/10 border border-primary/30 rounded-2xl p-6">
+          <h4 class="text-lg font-bold text-foreground mb-2">Welcome!</h4>
+          <p class="text-muted-foreground text-sm">Compete in leaderboards, earn coins and climb the rankings.</p>
         </div>
       </aside>
     </div>

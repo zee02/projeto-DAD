@@ -1,11 +1,11 @@
 <template>
-    <div class="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div class="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
         <div class="w-full max-w-md space-y-8">
             <div>
-                <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-                    Sign in to your accountss
+                <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-foreground">
+                    Sign in to your account
                 </h2>
-                <p class="mt-2 text-center text-sm text-gray-600">
+                <p class="mt-2 text-center text-sm text-muted-foreground">
                     Enter your credentials to access your account
                 </p>
             </div>
@@ -13,7 +13,7 @@
             <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
                 <div class="space-y-4 rounded-md shadow-sm">
                     <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="email" class="block text-sm font-medium text-foreground mb-1">
                             Email address
                         </label>
                         <Input id="email" v-model="formData.email" type="email" autocomplete="email" required
@@ -21,7 +21,7 @@
                     </div>
 
                     <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="password" class="block text-sm font-medium text-foreground mb-1">
                             Password
                         </label>
                         <Input id="password" v-model="formData.password" type="password" autocomplete="current-password"
@@ -35,8 +35,8 @@
                 </div>
 
                 <div class="text-center text-sm">
-                    <span class="text-gray-600">Don't have an account? </span>
-                    <a href="#" class="font-medium text-blue-600 hover:text-blue-500">
+                    <span class="text-muted-foreground">Don't have an account? </span>
+                    <a href="#" class="font-medium text-primary hover:text-primary/80">
                         Sign up
                     </a>
                 </div>

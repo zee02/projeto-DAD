@@ -1,30 +1,30 @@
 <template>
-  <div class="min-h-screen bg-white py-12 px-4">
+  <div class="min-h-screen bg-background py-12 px-4">
     <div class="max-w-4xl mx-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">💰 Coin Shop</h1>
-        <router-link to="/" class="text-blue-600 hover:text-blue-700 font-semibold">
+        <h1 class="text-3xl font-bold text-foreground">💰 Coin Shop</h1>
+        <router-link to="/" class="text-primary hover:text-primary/80 font-semibold">
           ← Back
         </router-link>
       </div>
 
       <!-- Current Balance Card -->
-      <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <div class="bg-card text-card-foreground rounded-lg shadow-lg p-6 mb-8">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-gray-600 text-sm">Current Balance</p>
-            <p class="text-3xl font-bold text-yellow-900">🪙 {{ user?.coins_balance || 0 }} coins</p>
+            <p class="text-muted-foreground text-sm">Current Balance</p>
+            <p class="text-3xl font-bold text-accent">🪙 {{ user?.coins_balance || 0 }} coins</p>
           </div>
           <div class="text-6xl opacity-20">💰</div>
         </div>
       </div>
 
       <!-- Messages -->
-      <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+      <div v-if="errorMessage" class="mb-4 p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded">
         {{ errorMessage }}
       </div>
-      <div v-if="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+      <div v-if="successMessage" class="mb-4 p-3 bg-secondary/10 border border-secondary/30 text-secondary rounded">
         {{ successMessage }}
       </div>
 
@@ -32,12 +32,12 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Buy Coins Form -->
         <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">Purchase Coins</h2>
+          <div class="bg-card text-card-foreground rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-card-foreground mb-6">Purchase Coins</h2>
 
             <!-- Amount Selection -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-3">Select Amount</label>
+              <label class="block text-sm font-medium text-foreground mb-3">Select Amount</label>
               <div class="space-y-2">
                 <button
                   v-for="amount in amounts"
@@ -46,8 +46,8 @@
                   :class="[
                     'w-full px-4 py-3 border-2 rounded-lg font-semibold transition',
                     formData.euros === amount
-                      ? 'border-blue-600 bg-blue-50 text-blue-600'
-                      : 'border-gray-300 text-gray-700 hover:border-blue-400'
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border text-foreground hover:border-primary/50'
                   ]"
                 >
                   {{ amount }}€ → {{ amount * 10 }} coins
@@ -57,10 +57,10 @@
 
             <!-- Payment Type -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-3">Payment Method</label>
+              <label class="block text-sm font-medium text-foreground mb-3">Payment Method</label>
               <select
                 v-model="formData.payment_type"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
               >
                 <option value="">Select payment method...</option>
                 <option value="MBWAY">MBWAY</option>
@@ -69,26 +69,26 @@
                 <option value="IBAN">IBAN Transfer</option>
                 <option value="MB">Multibanco</option>
               </select>
-              <p class="text-xs text-gray-500 mt-2">{{ getPaymentHint(formData.payment_type) }}</p>
+              <p class="text-xs text-muted-foreground mt-2">{{ getPaymentHint(formData.payment_type) }}</p>
             </div>
 
             <!-- Payment Reference -->
             <div class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-1">Payment Reference</label>
+              <label class="block text-sm font-medium text-foreground mb-1">Payment Reference</label>
               <input
                 v-model="formData.payment_reference"
                 :type="getPaymentInputType(formData.payment_type)"
                 :placeholder="getPaymentPlaceholder(formData.payment_type)"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
               />
-              <p class="text-xs text-gray-500 mt-1">{{ getPaymentFormat(formData.payment_type) }}</p>
+              <p class="text-xs text-muted-foreground mt-1">{{ getPaymentFormat(formData.payment_type) }}</p>
             </div>
 
             <!-- Buy Button -->
             <button
               @click="buyCoin"
               :disabled="!isFormValid || isPurchasing"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-3 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ isPurchasing ? 'Processing...' : `Buy ${formData.euros}€` }}
             </button>
@@ -97,42 +97,42 @@
 
         <!-- Purchase History -->
         <div class="lg:col-span-2">
-          <div class="bg-white rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-bold text-gray-900 mb-6">Purchase History</h2>
+          <div class="bg-card text-card-foreground rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-card-foreground mb-6">Purchase History</h2>
 
             <div v-if="purchases.length === 0" class="text-center py-8">
-              <p class="text-gray-500">No purchases yet. Start buying coins!</p>
+              <p class="text-muted-foreground">No purchases yet. Start buying coins!</p>
             </div>
 
             <div v-else class="overflow-x-auto">
               <table class="w-full text-sm">
-                <thead class="bg-gray-50 border-b">
+                <thead class="bg-muted/50 border-b border-border">
                   <tr>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-700">Date</th>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-700">Amount</th>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-700">Coins</th>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-700">Payment</th>
-                    <th class="px-4 py-2 text-left font-semibold text-gray-700">Status</th>
+                    <th class="px-4 py-2 text-left font-semibold text-foreground">Date</th>
+                    <th class="px-4 py-2 text-left font-semibold text-foreground">Amount</th>
+                    <th class="px-4 py-2 text-left font-semibold text-foreground">Coins</th>
+                    <th class="px-4 py-2 text-left font-semibold text-foreground">Payment</th>
+                    <th class="px-4 py-2 text-left font-semibold text-foreground">Status</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y">
-                  <tr v-for="purchase in purchases" :key="purchase.id" class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-gray-900">
+                <tbody class="divide-y divide-border">
+                  <tr v-for="purchase in purchases" :key="purchase.id" class="hover:bg-muted/50">
+                    <td class="px-4 py-3 text-foreground">
                       {{ formatDate(purchase.purchase_datetime) }}
                     </td>
-                    <td class="px-4 py-3 text-gray-900 font-semibold">
+                    <td class="px-4 py-3 text-foreground font-semibold">
                       {{ purchase.euros }}€
                     </td>
-                    <td class="px-4 py-3 text-yellow-900 font-semibold">
+                    <td class="px-4 py-3 text-accent font-semibold">
                       🪙 {{ purchase.coins }}
                     </td>
-                    <td class="px-4 py-3 text-gray-700">
-                      <span class="inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded">
+                    <td class="px-4 py-3 text-muted-foreground">
+                      <span class="inline-block bg-muted text-muted-foreground text-xs px-2 py-1 rounded border border-border">
                         {{ purchase.payment_type }}
                       </span>
                     </td>
                     <td class="px-4 py-3">
-                      <span class="inline-block bg-green-200 text-green-800 text-xs px-2 py-1 rounded">
+                      <span class="inline-block bg-secondary/20 text-secondary text-xs px-2 py-1 rounded border border-secondary/30">
                         ✓ {{ purchase.status }}
                       </span>
                     </td>
@@ -141,18 +141,18 @@
               </table>
 
               <!-- Summary -->
-              <div class="mt-6 pt-4 border-t border-gray-200 space-y-2">
+              <div class="mt-6 pt-4 border-t border-border space-y-2">
                 <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Total Purchases:</span>
-                  <span class="font-semibold text-gray-900">{{ purchases.length }}</span>
+                  <span class="text-muted-foreground">Total Purchases:</span>
+                  <span class="font-semibold text-foreground">{{ purchases.length }}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Total Spent:</span>
-                  <span class="font-semibold text-gray-900">{{ totalSpent }}€</span>
+                  <span class="text-muted-foreground">Total Spent:</span>
+                  <span class="font-semibold text-foreground">{{ totalSpent }}€</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                  <span class="text-gray-600">Total Coins Purchased:</span>
-                  <span class="font-semibold text-yellow-900">🪙 {{ totalCoins }}</span>
+                  <span class="text-muted-foreground">Total Coins Purchased:</span>
+                  <span class="font-semibold text-accent">🪙 {{ totalCoins }}</span>
                 </div>
               </div>
             </div>

@@ -1,53 +1,53 @@
 <template>
-  <div class="max-w-6xl mx-auto p-6">
+  <div class="max-w-6xl mx-auto p-6 bg-background min-h-screen">
     <div class="flex items-center gap-4 mb-6">
-      <button @click="goBack" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+      <button @click="goBack" class="px-4 py-2 bg-muted text-muted-foreground rounded hover:bg-muted/80 transition">
         ← Back
       </button>
-      <h1 class="text-2xl font-bold">Game Replay #{{ gameId }}</h1>
+      <h1 class="text-2xl font-bold text-foreground">Game Replay #{{ gameId }}</h1>
     </div>
 
     <div v-if="loading" class="text-center py-8">
-      <div class="text-gray-600">Loading replay...</div>
+      <div class="text-muted-foreground">Loading replay...</div>
     </div>
 
-    <div v-else-if="error" class="bg-red-50 border border-red-300 rounded p-4 text-red-700">
+    <div v-else-if="error" class="bg-destructive/10 border border-destructive/30 rounded p-4 text-destructive">
       {{ error }}
     </div>
 
     <div v-else-if="game" class="space-y-6">
       <!-- Game Info Header -->
-      <div class="bg-white shadow rounded-lg p-6">
+      <div class="bg-card text-card-foreground shadow rounded-lg p-6 border border-border">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <div class="text-sm text-gray-600">Date</div>
-            <div class="font-semibold">{{ formatDate(game.began_at) }}</div>
+            <div class="text-sm text-muted-foreground">Date</div>
+            <div class="font-semibold text-foreground">{{ formatDate(game.began_at) }}</div>
           </div>
           <div>
-            <div class="text-sm text-gray-600">Duration</div>
-            <div class="font-semibold">{{ formatDuration(game.total_time) }}</div>
+            <div class="text-sm text-muted-foreground">Duration</div>
+            <div class="font-semibold text-foreground">{{ formatDuration(game.total_time) }}</div>
           </div>
           <div>
-            <div class="text-sm text-gray-600">Type</div>
-            <div class="font-semibold">Bisca {{ game.type }}</div>
+            <div class="text-sm text-muted-foreground">Type</div>
+            <div class="font-semibold text-foreground">Bisca {{ game.type }}</div>
           </div>
         </div>
 
         <div class="mt-6 grid grid-cols-2 gap-4">
-          <div class="text-center p-4 rounded" :class="game.winner_user_id === game.player1_user_id ? 'bg-green-100' : 'bg-gray-100'">
-            <div class="text-sm text-gray-600">Player 1</div>
-            <div class="font-bold text-lg">{{ game.player1?.nickname || 'Player 1' }}</div>
-            <div class="text-2xl font-bold mt-2">{{ game.player1_points }} points</div>
-            <div v-if="game.winner_user_id === game.player1_user_id" class="text-green-600 font-semibold mt-1">
+          <div class="text-center p-4 rounded" :class="game.winner_user_id === game.player1_user_id ? 'bg-secondary/10 border border-secondary/30' : 'bg-muted/30 border border-border'">
+            <div class="text-sm text-muted-foreground">Player 1</div>
+            <div class="font-bold text-lg text-foreground">{{ game.player1?.nickname || 'Player 1' }}</div>
+            <div class="text-2xl font-bold mt-2 text-foreground">{{ game.player1_points }} points</div>
+            <div v-if="game.winner_user_id === game.player1_user_id" class="text-secondary font-semibold mt-1">
               🏆 Winner
             </div>
           </div>
 
-          <div class="text-center p-4 rounded" :class="game.winner_user_id === game.player2_user_id ? 'bg-green-100' : 'bg-gray-100'">
-            <div class="text-sm text-gray-600">Player 2</div>
-            <div class="font-bold text-lg">{{ game.player2?.nickname || 'Player 2' }}</div>
-            <div class="text-2xl font-bold mt-2">{{ game.player2_points }} points</div>
-            <div v-if="game.winner_user_id === game.player2_user_id" class="text-green-600 font-semibold mt-1">
+          <div class="text-center p-4 rounded" :class="game.winner_user_id === game.player2_user_id ? 'bg-secondary/10 border border-secondary/30' : 'bg-muted/30 border border-border'">
+            <div class="text-sm text-muted-foreground">Player 2</div>
+            <div class="font-bold text-lg text-foreground">{{ game.player2?.nickname || 'Player 2' }}</div>
+            <div class="text-2xl font-bold mt-2 text-foreground">{{ game.player2_points }} points</div>
+            <div v-if="game.winner_user_id === game.player2_user_id" class="text-secondary font-semibold mt-1">
               🏆 Winner
             </div>
           </div>

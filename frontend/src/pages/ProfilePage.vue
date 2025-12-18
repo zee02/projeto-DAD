@@ -1,31 +1,31 @@
 <template>
-  <div class="min-h-screen bg-white py-12 px-4">
-    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+  <div class="min-h-screen bg-background py-12 px-4">
+    <div class="max-w-2xl mx-auto bg-card text-card-foreground rounded-lg shadow-lg p-8 border border-border">
       <!-- Header -->
       <div class="flex items-center justify-between mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">My Profile</h1>
-        <router-link to="/" class="text-blue-600 hover:text-blue-700 font-semibold">
+        <h1 class="text-3xl font-bold text-foreground">My Profile</h1>
+        <router-link to="/" class="text-primary hover:text-primary/80 font-semibold">
           ← Back
         </router-link>
       </div>
 
       <!-- Error/Success Messages -->
-      <div v-if="errorMessage" class="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+      <div v-if="errorMessage" class="mb-4 p-3 bg-destructive/10 border border-destructive/30 text-destructive rounded">
         {{ errorMessage }}
       </div>
-      <div v-if="successMessage" class="mb-4 p-3 bg-green-100 border border-green-400 text-green-700 rounded">
+      <div v-if="successMessage" class="mb-4 p-3 bg-secondary/10 border border-secondary/30 text-secondary rounded">
         {{ successMessage }}
       </div>
 
       <!-- Tabs -->
-      <div class="flex gap-4 mb-6 border-b border-gray-200">
+      <div class="flex gap-4 mb-6 border-b border-border">
         <button
           @click="activeTab = 'profile'"
           :class="[
             'pb-2 px-4 font-semibold border-b-2 transition',
             activeTab === 'profile'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           ]"
         >
           Profile Info
@@ -35,8 +35,8 @@
           :class="[
             'pb-2 px-4 font-semibold border-b-2 transition',
             activeTab === 'password'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           ]"
         >
           Change Password
@@ -47,8 +47,8 @@
           :class="[
             'pb-2 px-4 font-semibold border-b-2 transition',
             activeTab === 'delete'
-              ? 'border-red-600 text-red-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
+              ? 'border-destructive text-destructive'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
           ]"
         >
           Delete Account
@@ -58,9 +58,9 @@
       <!-- Profile Info Tab -->
       <div v-if="activeTab === 'profile'" class="space-y-4">
         <!-- User Header Card -->
-        <div class="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg text-center">
+        <div class="p-6 bg-primary/5 border border-primary/20 rounded-lg text-center">
           <div class="flex justify-center mb-4">
-            <div class="w-32 h-32 rounded-full border-4 border-blue-300 bg-white flex items-center justify-center overflow-hidden">
+            <div class="w-32 h-32 rounded-full border-4 border-primary/30 bg-background flex items-center justify-center overflow-hidden">
               <img 
                 v-if="avatarPreview || user?.photo_avatar_filename"
                 :src="avatarPreview || getAvatarUrl(user?.photo_avatar_filename)" 
@@ -72,49 +72,49 @@
           </div>
         </div>
 
-        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p class="text-sm text-yellow-800">Coins Balance</p>
-          <p class="text-2xl font-bold text-yellow-900">🪙 {{ user?.coins_balance || 0 }} coins</p>
+        <div class="p-4 bg-accent/10 border border-accent/20 rounded-lg">
+          <p class="text-sm text-muted-foreground">Coins Balance</p>
+          <p class="text-2xl font-bold text-accent">🪙 {{ user?.coins_balance || 0 }} coins</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Full Name</label>
           <input
             v-model="profileForm.name"
             type="text"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nickname</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Nickname</label>
           <input
             v-model="profileForm.nickname"
             type="text"
             maxlength="20"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Bio</label>
           <textarea
             v-model="profileForm.bio"
             maxlength="1000"
             rows="4"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none bg-input text-foreground"
             placeholder="Tell us about yourself..."
           ></textarea>
-          <p class="text-xs text-gray-500 mt-1">{{ (profileForm.bio || '').length }}/1000 characters</p>
+          <p class="text-xs text-muted-foreground mt-1">{{ (profileForm.bio || '').length }}/1000 characters</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-3">Avatar</label>
+          <label class="block text-sm font-medium text-foreground mb-3">Avatar</label>
           <div class="flex items-center gap-4">
             <!-- Avatar Preview -->
             <div 
               @click="$refs.avatarInput.click()"
-              class="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition"
+              class="w-24 h-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition"
             >
               <img 
                 v-if="avatarPreview"
@@ -124,7 +124,7 @@
               />
               <div v-else class="text-center">
                 <p class="text-2xl mb-1">📷</p>
-                <p class="text-xs text-gray-500">Click to upload</p>
+                <p class="text-xs text-muted-foreground">Click to upload</p>
               </div>
             </div>
             <!-- Hidden File Input -->
@@ -137,10 +137,10 @@
             />
             <!-- File Info -->
             <div class="flex-1">
-              <p v-if="profileForm.photo_avatar_filename" class="text-sm text-gray-700">
+              <p v-if="profileForm.photo_avatar_filename" class="text-sm text-foreground">
                 <strong>Current:</strong> {{ profileForm.photo_avatar_filename }}
               </p>
-              <p class="text-xs text-gray-500 mt-2">
+              <p class="text-xs text-muted-foreground mt-2">
                 Click the image to select a new avatar (JPG, PNG, GIF)
               </p>
             </div>
@@ -150,7 +150,7 @@
         <button
           @click="updateProfile"
           :disabled="isUpdating"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+          class="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition disabled:opacity-50"
         >
           {{ isUpdating ? 'Saving...' : 'Save Changes' }}
         </button>
@@ -159,39 +159,39 @@
       <!-- Password Tab -->
       <div v-if="activeTab === 'password'" class="space-y-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Current Password</label>
           <input
             v-model="passwordForm.current_password"
             type="password"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+          <label class="block text-sm font-medium text-foreground mb-1">New Password</label>
           <input
             v-model="passwordForm.new_password"
             type="password"
             minlength="6"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
-          <p class="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
+          <p class="text-xs text-muted-foreground mt-1">Minimum 6 characters</p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Confirm New Password</label>
           <input
             v-model="passwordForm.new_password_confirmation"
             type="password"
             minlength="6"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <button
           @click="changePassword"
           :disabled="isChangingPassword"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+          class="w-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold py-2 rounded-lg transition disabled:opacity-50"
         >
           {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
         </button>
@@ -199,18 +199,18 @@
 
       <!-- Delete Account Tab -->
       <div v-if="activeTab === 'delete' && user?.type !== 'A'" class="space-y-4">
-        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p class="text-red-900 font-semibold mb-2">⚠️ Warning: This action cannot be undone</p>
-          <p class="text-red-800 text-sm">
+        <div class="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+          <p class="text-destructive font-semibold mb-2">⚠️ Warning: This action cannot be undone</p>
+          <p class="text-destructive text-sm">
             Deleting your account will permanently remove all your data. This includes your profile, games history, and coin balance.
           </p>
         </div>
 
         <!-- Confirmation Method Selector -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Choose confirmation method:</label>
+          <label class="block text-sm font-medium text-foreground mb-2">Choose confirmation method:</label>
           <div class="space-y-2">
-            <label class="flex items-center cursor-pointer">
+            <label class="flex items-center cursor-pointer text-foreground">
               <input
                 type="radio"
                 v-model="deleteForm.confirmationType"
@@ -219,7 +219,7 @@
               />
               <span>Confirm with password</span>
             </label>
-            <label class="flex items-center cursor-pointer">
+            <label class="flex items-center cursor-pointer text-foreground">
               <input
                 type="radio"
                 v-model="deleteForm.confirmationType"
@@ -228,7 +228,7 @@
               />
               <span>Confirm with username</span>
             </label>
-            <label class="flex items-center cursor-pointer">
+            <label class="flex items-center cursor-pointer text-foreground">
               <input
                 type="radio"
                 v-model="deleteForm.confirmationType"
@@ -242,43 +242,43 @@
 
         <!-- Password Confirmation -->
         <div v-if="deleteForm.confirmationType === 'password'">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Enter Your Password</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Enter Your Password</label>
           <input
             v-model="deleteForm.password"
             type="password"
             placeholder="Enter your password"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <!-- Username Confirmation -->
         <div v-if="deleteForm.confirmationType === 'username'">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Type your username to confirm</label>
+          <label class="block text-sm font-medium text-foreground mb-1">Type your username to confirm</label>
           <input
             v-model="deleteForm.username"
             type="text"
             :placeholder="`Enter your username`"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <!-- Phrase Confirmation -->
         <div v-if="deleteForm.confirmationType === 'phrase'">
-          <label class="block text-sm font-medium text-gray-700 mb-1">
-            Type the phrase "<code class="bg-gray-100 px-1 rounded text-red-600">{{ confirmationPhrase }}</code>" to confirm
+          <label class="block text-sm font-medium text-foreground mb-1">
+            Type the phrase "<code class="bg-muted px-1 rounded text-destructive">{{ confirmationPhrase }}</code>" to confirm
           </label>
           <input
             v-model="deleteForm.phrase"
             type="text"
             :placeholder="confirmationPhrase"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
           />
         </div>
 
         <button
           @click="showDeleteConfirmation = true"
           :disabled="!isDeleteConfirmationValid || isDeleting"
-          class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-destructive hover:bg-destructive/80 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ isDeleting ? 'Deleting...' : 'Delete My Account' }}
         </button>
@@ -292,23 +292,23 @@
       @click="showDeleteConfirmation = false"
     >
       <div
-        class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4"
+        class="bg-card text-card-foreground rounded-lg shadow-xl p-6 max-w-sm mx-4 border border-border"
         @click.stop
       >
-        <h3 class="text-xl font-bold text-gray-900 mb-4">Delete Account?</h3>
-        <p class="text-gray-600 mb-6">
+        <h3 class="text-xl font-bold text-foreground mb-4">Delete Account?</h3>
+        <p class="text-muted-foreground mb-6">
           Are you absolutely sure you want to delete your account? This action cannot be reversed.
         </p>
         <div class="flex gap-4">
           <button
             @click="showDeleteConfirmation = false"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition"
+            class="flex-1 px-4 py-2 border border-border rounded-lg text-foreground font-semibold hover:bg-muted/50 transition"
           >
             Cancel
           </button>
           <button
             @click="deleteAccount"
-            class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition"
+            class="flex-1 px-4 py-2 bg-destructive hover:bg-destructive/80 text-white font-semibold rounded-lg transition"
           >
             Yes, Delete
           </button>

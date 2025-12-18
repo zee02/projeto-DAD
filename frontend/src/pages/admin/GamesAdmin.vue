@@ -1,11 +1,11 @@
 <template>
-  <div class="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+  <div class="min-h-screen bg-background p-4 md:p-8">
     <!-- Header Section -->
     <div class="mb-8">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-slate-900">Games</h1>
-          <p class="text-slate-600 text-sm mt-1">Manage and monitor all games</p>
+          <h1 class="text-3xl font-bold text-foreground">Games</h1>
+          <p class="text-muted-foreground text-sm mt-1">Manage and monitor all games</p>
         </div>
         <div class="flex gap-2">
           <Button variant="outline" size="sm" class="hidden sm:inline-flex">
@@ -24,25 +24,25 @@
         label="Total Games" 
         :value="games.length" 
         icon="🎮"
-        class="bg-blue-50 border-blue-200"
+        class="bg-primary/5 border-primary/20"
       />
       <StatCard 
         label="Pending" 
         :value="games.filter(g => g.status === 'Pending').length" 
         icon="⏳"
-        class="bg-yellow-50 border-yellow-200"
+        class="bg-accent/5 border-accent/20"
       />
       <StatCard 
         label="Playing" 
         :value="games.filter(g => g.status === 'Playing').length" 
         icon="▶️"
-        class="bg-green-50 border-green-200"
+        class="bg-secondary/5 border-secondary/20"
       />
       <StatCard 
         label="Ended" 
         :value="games.filter(g => g.status === 'Ended').length" 
         icon="✓"
-        class="bg-purple-50 border-purple-200"
+        class="bg-muted/50 border-border"
       />
     </div>
 
@@ -52,11 +52,11 @@
         v-model="searchTerm"
         type="text"
         placeholder="Search by game ID..."
-        class="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        class="flex-1 px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-input text-foreground"
       />
       <select
         v-model="filterStatus"
-        class="px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-white"
+        class="px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm bg-input text-foreground"
       >
         <option value="">All Status</option>
         <option value="Pending">Pending</option>
@@ -67,16 +67,16 @@
     </div>
 
     <!-- Games Table Card -->
-    <Card class="bg-white border border-slate-200 shadow-lg">
-      <div class="px-6 py-4 border-b border-slate-200">
-        <h2 class="text-lg font-semibold text-slate-900">Games List</h2>
+    <Card class="bg-card border border-border shadow-lg">
+      <div class="px-6 py-4 border-b border-border">
+        <h2 class="text-lg font-semibold text-card-foreground">Games List</h2>
       </div>
 
       <!-- Table -->
       <div class="overflow-x-auto">
         <Table v-if="filteredGames.length > 0">
           <TableHeader>
-            <TableRow class="hover:bg-slate-50">
+            <TableRow class="hover:bg-muted/50">
               <TableHead class="w-12">ID</TableHead>
               <TableHead class="w-16">Type</TableHead>
               <TableHead>Status</TableHead>
@@ -89,9 +89,9 @@
             <TableRow 
               v-for="g in filteredGames" 
               :key="g.id"
-              class="hover:bg-slate-50 transition-colors"
+              class="hover:bg-muted/50 transition-colors"
             >
-              <TableCell class="font-mono text-sm font-medium text-slate-900">{{ g.id }}</TableCell>
+              <TableCell class="font-mono text-sm font-medium text-foreground">{{ g.id }}</TableCell>
               <TableCell>
                 <Badge :variant="g.type === '9' ? 'default' : 'secondary'" class="font-medium">
                   {{ g.type === '9' ? '9-Card' : '3-Card' }}
@@ -102,12 +102,12 @@
                   {{ g.status }}
                 </Badge>
               </TableCell>
-              <TableCell class="text-sm text-slate-600">
+              <TableCell class="text-sm text-muted-foreground">
                 <div class="flex flex-col">
                   <span>{{ formatDate(g.began_at) }}</span>
                 </div>
               </TableCell>
-              <TableCell class="text-sm text-slate-600">
+              <TableCell class="text-sm text-muted-foreground">
                 {{ g.ended_at ? formatDate(g.ended_at) : '—' }}
               </TableCell>
               <TableCell class="text-right">
@@ -125,7 +125,7 @@
                   <Button size="sm" variant="ghost" class="h-8 w-8 p-0" @click="viewGame(g)">
                     👁
                   </Button>
-                  <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-red-600 hover:bg-red-50">
+                  <Button size="sm" variant="ghost" class="h-8 w-8 p-0 text-destructive hover:bg-destructive/10">
                     🗑
                   </Button>
                 </div>
@@ -137,23 +137,23 @@
         <!-- Empty State -->
         <div v-else class="p-12 text-center">
           <div class="text-4xl mb-3">🎮</div>
-          <h3 class="text-lg font-semibold text-slate-900 mb-2">No games found</h3>
-          <p class="text-slate-600">Try adjusting your search or filters</p>
+          <h3 class="text-lg font-semibold text-foreground mb-2">No games found</h3>
+          <p class="text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       </div>
 
       <!-- Pagination Info -->
-      <div v-if="filteredGames.length > 0" class="px-6 py-4 border-t border-slate-200 text-sm text-slate-600">
+      <div v-if="filteredGames.length > 0" class="px-6 py-4 border-t border-border text-sm text-muted-foreground">
         Showing {{ filteredGames.length }} of {{ games.length }} games
       </div>
     </Card>
 
     <!-- Loading State -->
     <div v-if="isLoading" class="fixed inset-0 bg-black/50 flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6">
+      <div class="bg-card rounded-lg p-6">
         <div class="text-center">
           <div class="text-4xl animate-spin mb-3">⏳</div>
-          <p class="text-slate-600">Loading games...</p>
+          <p class="text-muted-foreground">Loading games...</p>
         </div>
       </div>
     </div>

@@ -1,19 +1,19 @@
 <template>
-  <div class="max-w-5xl mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">My Game History</h1>
+  <div class="max-w-5xl mx-auto p-6 bg-background min-h-screen">
+    <h1 class="text-2xl font-bold mb-4 text-foreground">My Game History</h1>
 
-    <div class="bg-white shadow rounded-lg p-4 mb-4">
+    <div class="bg-card text-card-foreground shadow rounded-lg p-4 mb-4 border border-border">
       <div class="flex items-center justify-between mb-3">
         <div class="flex gap-3 items-center">
-          <label class="text-sm text-gray-600">Type</label>
-          <select v-model="filters.type" class="border rounded px-2 py-1 text-sm">
+          <label class="text-sm text-muted-foreground">Type</label>
+          <select v-model="filters.type" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
             <option value="">All</option>
             <option value="3">Bisca 3</option>
             <option value="9">Bisca 9</option>
           </select>
 
-          <label class="text-sm text-gray-600 ml-4">Status</label>
-          <select v-model="filters.status" class="border rounded px-2 py-1 text-sm">
+          <label class="text-sm text-muted-foreground ml-4">Status</label>
+          <select v-model="filters.status" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
             <option value="">Todos</option>
             <option value="Pending">Pending</option>
             <option value="Playing">Playing</option>
@@ -23,38 +23,38 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button @click="reload" class="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Apply</button>
+          <button @click="reload" class="px-3 py-1 rounded bg-primary text-primary-foreground text-sm hover:bg-primary/80 transition">Apply</button>
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left table-auto border-collapse">
           <thead>
-            <tr class="text-sm text-gray-600">
-              <th class="p-2">Date</th>
-              <th class="p-2">Opponent</th>
-              <th class="p-2">Result</th>
-              <th class="p-2">Points</th>
-              <th class="p-2">Duration</th>
-              <th class="p-2">Type</th>
-              <th class="p-2">Status</th>
-              <th class="p-2">Actions</th>
+            <tr class="text-sm text-muted-foreground border-b border-border">
+              <th class="p-2 text-foreground font-semibold">Date</th>
+              <th class="p-2 text-foreground font-semibold">Opponent</th>
+              <th class="p-2 text-foreground font-semibold">Result</th>
+              <th class="p-2 text-foreground font-semibold">Points</th>
+              <th class="p-2 text-foreground font-semibold">Duration</th>
+              <th class="p-2 text-foreground font-semibold">Type</th>
+              <th class="p-2 text-foreground font-semibold">Status</th>
+              <th class="p-2 text-foreground font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="g in games" :key="g.id" class="border-t text-sm hover:bg-gray-50">
-              <td class="p-2">{{ formatDate(g.began_at) }}</td>
-              <td class="p-2">{{ opponentName(g) }}</td>
-              <td class="p-2">{{ resultLabel(g) }}</td>
-              <td class="p-2">{{ pointsLabel(g) }}</td>
-              <td class="p-2">{{ durationLabel(g) }}</td>
-              <td class="p-2">{{ g.type }}</td>
-              <td class="p-2">{{ g.status }}</td>
+            <tr v-for="g in games" :key="g.id" class="border-t border-border text-sm hover:bg-muted/30 transition">
+              <td class="p-2 text-foreground">{{ formatDate(g.began_at) }}</td>
+              <td class="p-2 text-foreground">{{ opponentName(g) }}</td>
+              <td class="p-2 text-foreground">{{ resultLabel(g) }}</td>
+              <td class="p-2 text-foreground">{{ pointsLabel(g) }}</td>
+              <td class="p-2 text-foreground">{{ durationLabel(g) }}</td>
+              <td class="p-2 text-foreground">{{ g.type }}</td>
+              <td class="p-2 text-foreground">{{ g.status }}</td>
               <td class="p-2">
                 <button 
                   v-if="g.status === 'Ended'"
                   @click="viewReplay(g.id)" 
-                  class="px-3 py-1 bg-indigo-600 text-white rounded text-xs hover:bg-indigo-700"
+                  class="px-3 py-1 bg-primary text-primary-foreground rounded text-xs hover:bg-primary/80 transition"
                 >
                   View Replay
                 </button>
@@ -65,10 +65,10 @@
       </div>
 
       <div class="mt-4 flex items-center justify-between">
-        <div class="text-sm text-gray-600">Page {{ meta.current_page }} of {{ meta.last_page || 1 }}</div>
+        <div class="text-sm text-muted-foreground">Page {{ meta.current_page }} of {{ meta.last_page || 1 }}</div>
         <div class="flex gap-2">
-          <button class="px-3 py-1 border rounded" @click="prevPage" :disabled="meta.current_page <= 1">Previous</button>
-          <button class="px-3 py-1 border rounded" @click="nextPage" :disabled="meta.current_page >= (meta.last_page || 1)">Next</button>
+          <button class="px-3 py-1 border border-border rounded text-foreground hover:bg-muted/50 transition disabled:opacity-50" @click="prevPage" :disabled="meta.current_page <= 1">Previous</button>
+          <button class="px-3 py-1 border border-border rounded text-foreground hover:bg-muted/50 transition disabled:opacity-50" @click="nextPage" :disabled="meta.current_page >= (meta.last_page || 1)">Next</button>
         </div>
       </div>
     </div>

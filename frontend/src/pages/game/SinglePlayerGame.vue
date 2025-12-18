@@ -210,28 +210,28 @@ const getCardBackImagePath = () => '/cards/semFace.png'
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100 flex flex-col items-center py-8 px-4">
-    <div class="w-full max-w-5xl bg-white shadow-xl rounded-2xl p-6 flex flex-col gap-4">
+  <div class="min-h-screen bg-background flex flex-col items-center py-8 px-4">
+    <div class="w-full max-w-5xl bg-card text-card-foreground shadow-xl rounded-2xl p-6 flex flex-col gap-4">
       <!-- Header -->
       <div class="flex items-center justify-between mb-2">
         <div>
-          <h1 class="text-2xl font-bold">{{ gameTitle }}</h1>
-          <p class="text-sm text-gray-600">
+          <h1 class="text-2xl font-bold text-foreground">{{ gameTitle }}</h1>
+          <p class="text-sm text-muted-foreground">
             Trump suit:
-            <span v-if="state" class="font-semibold">
+            <span v-if="state" class="font-semibold text-foreground">
               {{ suitSymbol(state.trumpSuit) }}
             </span>
           </p>
         </div>
         <div class="flex gap-2">
           <button
-            class="px-3 py-1 rounded-lg bg-slate-200 text-sm hover:bg-slate-300"
+            class="px-3 py-1 rounded-lg bg-muted text-muted-foreground text-sm hover:bg-muted/80 transition"
             @click="goBack"
           >
             Back
           </button>
           <button
-            class="px-3 py-1 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+            class="px-3 py-1 rounded-lg bg-primary text-primary-foreground text-sm hover:bg-primary/80 transition"
             @click="restart"
           >
             Restart
