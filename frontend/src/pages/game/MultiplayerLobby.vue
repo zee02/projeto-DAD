@@ -12,9 +12,12 @@ const authStore = useAuthStore()
 // Local state
 const lobbyId = ref(null)
 const waitingForOpponent = ref(false)
-const selectedBet = ref(2)
+const selectedBet = ref(3)
 const gameType = ref(route.query.mode || '3')
-const betOptions = [2, 5, 10]
+const stakeMode = ref('preset') // 'preset' or 'custom'
+const customStake = ref(null)
+const customStakeError = ref('')
+const betOptions = [3] // Preset: 3 coins (minimum stake)
 const leftLobby = ref(false)
 const coinsRefunded = ref(false) // Track if coins were already refunded
 const userCanceledSearch = ref(false) // Track if user clicked cancel
@@ -35,16 +38,47 @@ const joinLobby = async () => {
     return
   }
 
+  // Validate custom stake if in custom mode
+  if (stakeMode.value === 'custom') {
+    if (!customStake.value || customStake.value === '') {
+      customStakeError.value = 'Please enter a stake amount'
+      return
+    }
+    if (!Number.isInteger(Number(customStake.value))) {
+      customStakeError.value = 'Stake must be a whole number'
+      return
+    }
+    const stake = Number(customStake.value)
+    if (stake < 3) {
+      customStakeError.value = 'Minimum stake is 3 coins'
+      return
+    }
+    if (stake > 100) {
+      customStakeError.value = 'Maximum stake is 100 coins'
+      return
+    }
+    selectedBet.value = stake
+  }
+
+  // Check if user has enough coins
+  const currentCoins = Number(user.value.coins_balance || 0)
+  const betAmount = Number(selectedBet.value || 0)
+  
+  if (currentCoins < betAmount) {
+    errorMessage.value = `Insufficient coins! You need ${betAmount} coins but only have ${currentCoins}.`
+    return
+  }
+
   isLoading.value = true
   errorMessage.value = ''
+  customStakeError.value = ''
 
   try {
     // Reset refund flag for new lobby session
     coinsRefunded.value = false
     
     // Immediately deduct coins from player's balance (optimistic update)
-    const currentCoins = Number(user.value.coins_balance || 0)
-    const newCoins = Math.max(0, currentCoins - Number(selectedBet.value || 0))
+    const newCoins = Math.max(0, currentCoins - betAmount)
     authStore.setUser({ ...user.value, coins_balance: newCoins })
 
     socketStore.socket.emit('lobby:join', {
@@ -236,22 +270,56 @@ onBeforeUnmount(() => {
           <!-- Bet Amount -->
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-3">
-              Bet Amount (coins)
+              Stake (coins)
             </label>
-            <div class="grid grid-cols-3 gap-3">
+            
+            <!-- Mode Selection -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
               <button
-                v-for="bet in betOptions"
-                :key="bet"
-                @click="selectedBet = bet"
+                @click="stakeMode = 'preset'"
                 :class="[
-                  'py-3 px-4 rounded-lg font-semibold transition',
-                  selectedBet === bet
+                  'py-2 px-3 rounded-lg font-semibold text-sm transition',
+                  stakeMode === 'preset'
                     ? 'bg-blue-600 text-white shadow-lg'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
                 ]"
               >
-                {{ bet }}
+                3 Coins (Quick)
               </button>
+              <button
+                @click="stakeMode = 'custom'"
+                :class="[
+                  'py-2 px-3 rounded-lg font-semibold text-sm transition',
+                  stakeMode === 'custom'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
+                ]"
+              >
+                Custom (3-100)
+              </button>
+            </div>
+
+            <!-- Preset Display / Custom Input -->
+            <div v-if="stakeMode === 'preset'" class="space-y-2">
+
+            </div>
+
+            <div v-else class="space-y-2">
+              <input
+                v-model.number="customStake"
+                type="number"
+                min="3"
+                max="100"
+                placeholder="Enter stake (3-100)"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
+                @keyup.enter="joinLobby"
+              />
+              <p v-if="customStake" class="text-sm text-gray-600 text-center">
+                Your stake: {{ customStake }} coins
+              </p>
+              <p v-if="customStakeError" class="text-sm text-red-600 text-center">
+                {{ customStakeError }}
+              </p>
             </div>
           </div>
 

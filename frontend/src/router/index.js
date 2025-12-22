@@ -7,8 +7,6 @@ const LoginPage = () => import('@/pages/LoginPage.vue')
 const RegisterPage = () => import('@/pages/RegisterPage.vue')
 const ProfilePage = () => import('@/pages/ProfilePage.vue')
 const CoinShopPage = () => import('@/pages/CoinShopPage.vue')
-const LaravelPage = () => import('@/pages/testing/LaravelPage.vue')
-const WebsocketsPage = () => import('@/pages/testing/WebsocketsPage.vue')
 const AdminDashboard = () => import('@/pages/admin/AdminDashboard.vue')
 const AdminUsers = () => import('@/pages/admin/UsersAdmin.vue')
 const AdminCreate = () => import('@/pages/admin/CreateAdmin.vue')
@@ -74,19 +72,6 @@ const router = createRouter({
       path: '/coin-shop',
       component: CoinShopPage,
       meta: { requiresPlayer: true },
-    },
-    {
-      path: '/testing',
-      children: [
-        {
-          path: 'laravel',
-          component: LaravelPage,
-        },
-        {
-          path: 'websockets',
-          component: WebsocketsPage,
-        },
-      ],
     },
     {
       path: '/admin',

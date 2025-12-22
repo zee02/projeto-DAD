@@ -259,9 +259,12 @@ export default {
       this.errors = {}
       this.isPurchasing = true
 
+      const authStore = useAuthStore()
+      // Store previous balance in case we need to revert on error
+      const previousBalance = this.user?.coins_balance ?? 0
+
       try {
         const apiStore = useAPIStore()
-        const authStore = useAuthStore()
 
         const response = await apiStore.postBuyCoin({
           euros: this.formData.euros,
@@ -269,7 +272,7 @@ export default {
           payment_reference: this.formData.payment_reference,
         })
 
-        // Update user coins
+        // Update user coins with fresh balance from server
         authStore.setUser({
           ...this.user,
           coins_balance: response.new_balance,
@@ -287,6 +290,12 @@ export default {
       } catch (error) {
         this.errors = getValidationErrors(error)
         this.errorMessage = getErrorMessage(error)
+        
+        // Revert to previous balance on error to prevent accumulation
+        authStore.setUser({
+          ...this.user,
+          coins_balance: previousBalance,
+        })
       } finally {
         this.isPurchasing = false
       }

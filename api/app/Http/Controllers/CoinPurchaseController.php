@@ -28,7 +28,7 @@ class CoinPurchaseController extends Controller
         $validated = $request->validated();
 
         try {
-            // Process payment through gateway
+            // Process payment through gateway FIRST, before any database modifications
             $paymentResult = $this->paymentGateway->processPayment($validated);
 
             if (!$paymentResult['success']) {
@@ -39,6 +39,7 @@ class CoinPurchaseController extends Controller
             }
 
             // Use transaction to ensure data consistency
+            // Payment is verified before entering transaction
             $purchase = DB::transaction(function () use ($user, $validated, $paymentResult) {
                 // Calculate coins from euros (1 euro = 10 coins)
                 $coins = $this->paymentGateway->calculateCoins($validated['euros']);
@@ -67,11 +68,14 @@ class CoinPurchaseController extends Controller
                 return $purchase;
             });
 
+            // Refresh user to get the latest balance from database
+            $user->refresh();
+
             return response()->json([
                 'message' => 'Coins purchased successfully!',
                 'transaction_id' => $paymentResult['transaction_id'],
                 'coins_purchased' => $this->paymentGateway->calculateCoins($validated['euros']),
-                'new_balance' => $user->fresh()->coins_balance,
+                'new_balance' => $user->coins_balance,
                 'purchase' => $purchase,
             ], 201);
         } catch (\Exception $e) {
