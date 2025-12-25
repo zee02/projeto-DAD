@@ -278,7 +278,7 @@
         <button
           @click="showDeleteConfirmation = true"
           :disabled="!isDeleteConfirmationValid || isDeleting"
-          class="w-full bg-destructive hover:bg-destructive/80 text-white font-semibold py-2 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition shadow-md shadow-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {{ isDeleting ? 'Deleting...' : 'Delete My Account' }}
         </button>
@@ -288,11 +288,11 @@
     <!-- Delete Confirmation Modal -->
     <div
       v-if="showDeleteConfirmation"
-      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       @click="showDeleteConfirmation = false"
     >
       <div
-        class="bg-card text-card-foreground rounded-lg shadow-xl p-6 max-w-sm mx-4 border border-border"
+        class="bg-white text-card-foreground rounded-lg shadow-xl p-6 max-w-sm mx-4 border border-border"
         @click.stop
       >
         <h3 class="text-xl font-bold text-foreground mb-4">Delete Account?</h3>
@@ -308,7 +308,7 @@
           </button>
           <button
             @click="deleteAccount"
-            class="flex-1 px-4 py-2 bg-destructive hover:bg-destructive/80 text-white font-semibold rounded-lg transition"
+            class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition shadow-sm shadow-red-200"
           >
             Yes, Delete
           </button>
