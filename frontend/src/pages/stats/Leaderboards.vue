@@ -30,7 +30,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="Search player name..."
-              class="pl-10 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-full sm:w-64 bg-input text-foreground"
+              class="pl-10 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary w-full sm:w-64 bg-input text-foreground"
             />
             <span class="absolute left-3 top-2.5 text-muted-foreground">🔍</span>
           </div>

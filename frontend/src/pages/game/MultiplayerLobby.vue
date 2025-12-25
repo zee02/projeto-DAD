@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
                 min="3"
                 max="100"
                 placeholder="Enter stake (3-100)"
-                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent outline-none"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none"
                 @keyup.enter="joinLobby"
               />
               <p v-if="customStake" class="text-sm text-gray-600 text-center">

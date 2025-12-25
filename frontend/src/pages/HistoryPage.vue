@@ -6,14 +6,14 @@
       <div class="flex items-center justify-between mb-3">
         <div class="flex gap-3 items-center">
           <label class="text-sm text-muted-foreground">Type</label>
-          <select v-model="filters.type" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+          <select v-model="filters.type" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none">
             <option value="">All</option>
             <option value="3">Bisca 3</option>
             <option value="9">Bisca 9</option>
           </select>
 
           <label class="text-sm text-muted-foreground ml-4">Status</label>
-          <select v-model="filters.status" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none">
+          <select v-model="filters.status" class="border border-border rounded px-2 py-1 text-sm bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none">
             <option value="">Todos</option>
             <option value="Pending">Pending</option>
             <option value="Playing">Playing</option>

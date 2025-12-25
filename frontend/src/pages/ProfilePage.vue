@@ -82,7 +82,7 @@
           <input
             v-model="profileForm.name"
             type="text"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
           />
         </div>
 
@@ -92,7 +92,7 @@
             v-model="profileForm.nickname"
             type="text"
             maxlength="20"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
           />
         </div>
 
@@ -102,7 +102,7 @@
             v-model="profileForm.bio"
             maxlength="1000"
             rows="4"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none resize-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none bg-input text-foreground"
             placeholder="Tell us about yourself..."
           ></textarea>
           <p class="text-xs text-muted-foreground mt-1">{{ (profileForm.bio || '').length }}/1000 characters</p>
@@ -163,7 +163,7 @@
           <input
             v-model="passwordForm.current_password"
             type="password"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
           />
         </div>
 
@@ -173,7 +173,7 @@
             v-model="passwordForm.new_password"
             type="password"
             minlength="3"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
           />
           <p class="text-xs text-muted-foreground mt-1">Minimum 3 characters</p>
         </div>
@@ -184,7 +184,7 @@
             v-model="passwordForm.new_password_confirmation"
             type="password"
             minlength="6"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
           />
         </div>
 
@@ -247,7 +247,7 @@
             v-model="deleteForm.password"
             type="password"
             placeholder="Enter your password"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-destructive outline-none bg-input text-foreground"
           />
         </div>
 
@@ -258,7 +258,7 @@
             v-model="deleteForm.username"
             type="text"
             :placeholder="`Enter your username`"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-destructive outline-none bg-input text-foreground"
           />
         </div>
 
@@ -271,7 +271,7 @@
             v-model="deleteForm.phrase"
             type="text"
             :placeholder="confirmationPhrase"
-            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-transparent outline-none bg-input text-foreground"
+            class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-destructive focus:border-destructive outline-none bg-input text-foreground"
           />
         </div>
 

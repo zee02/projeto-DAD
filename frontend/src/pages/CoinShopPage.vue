@@ -64,7 +64,7 @@
                     min="1"
                     max="99"
                     placeholder="1-99€"
-                    class="flex-1 px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+                    class="flex-1 px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
                     @keyup.enter="setCustomAmount"
                   />
                   <button
@@ -88,7 +88,7 @@
               <label class="block text-sm font-medium text-foreground mb-3">Payment Method</label>
               <select
                 v-model="formData.payment_type"
-                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
               >
                 <option value="">Select payment method...</option>
                 <option value="MBWAY">MBWAY</option>
@@ -108,7 +108,7 @@
                 v-model="formData.payment_reference"
                 :type="getPaymentInputType(formData.payment_type)"
                 :placeholder="getPaymentPlaceholder(formData.payment_type)"
-                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
+                class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground"
               />
               <p class="text-xs text-muted-foreground mt-1">{{ getPaymentFormat(formData.payment_type) }}</p>
               <p v-if="errors.payment_reference" class="mt-1 text-sm text-destructive">{{ formatError(errors.payment_reference) }}</p>

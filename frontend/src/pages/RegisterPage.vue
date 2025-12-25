@@ -18,7 +18,7 @@
             type="text"
             required
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground',
               errors.name ? 'border-destructive bg-destructive/5' : 'border-border'
             ]"
             placeholder="John Doe"
@@ -35,7 +35,7 @@
             type="email"
             required
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground',
               errors.email ? 'border-destructive bg-destructive/5' : 'border-border'
             ]"
             placeholder="your@email.com"
@@ -52,7 +52,7 @@
             type="text"
             maxlength="20"
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground',
               errors.nickname ? 'border-destructive bg-destructive/5' : 'border-border'
             ]"
             placeholder="MyNickname"
@@ -70,7 +70,7 @@
             required
             minlength="3"
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground',
               errors.password ? 'border-destructive bg-destructive/5' : 'border-border'
             ]"
             placeholder="••••••"
@@ -89,7 +89,7 @@
             required
             minlength="3"
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-input text-foreground',
               errors.password_confirmation ? 'border-destructive bg-destructive/5' : 'border-border'
             ]"
             placeholder="••••••"

@@ -6,17 +6,17 @@
       <form @submit.prevent="submit">
         <div class="mb-3">
           <label class="block mb-1 text-foreground font-medium">Name</label>
-          <input v-model="form.name" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none" />
+          <input v-model="form.name" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
         </div>
 
         <div class="mb-3">
           <label class="block mb-1 text-foreground font-medium">Email</label>
-          <input v-model="form.email" type="email" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none" />
+          <input v-model="form.email" type="email" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
         </div>
 
         <div class="mb-3">
           <label class="block mb-1 text-foreground font-medium">Password</label>
-          <input v-model="form.password" type="password" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-transparent outline-none" />
+          <input v-model="form.password" type="password" class="w-full p-2 border border-border rounded bg-input text-foreground focus:ring-2 focus:ring-primary focus:border-primary outline-none" />
         </div>
 
         <div class="flex gap-3 justify-end mt-4">

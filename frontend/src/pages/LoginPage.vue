@@ -18,7 +18,7 @@
             type="email"
             required
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none',
               errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
             ]"
             placeholder="your@email.com"
@@ -35,7 +35,7 @@
             type="password"
             required
             :class="[
-              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none',
+              'w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none',
               errors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
             ]"
             placeholder="••••••"
