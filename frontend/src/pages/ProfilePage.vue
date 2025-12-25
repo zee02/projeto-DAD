@@ -172,10 +172,10 @@
           <input
             v-model="passwordForm.new_password"
             type="password"
-            minlength="6"
+            minlength="3"
             class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none bg-input text-foreground"
           />
-          <p class="text-xs text-muted-foreground mt-1">Minimum 6 characters</p>
+          <p class="text-xs text-muted-foreground mt-1">Minimum 3 characters</p>
         </div>
 
         <div>
