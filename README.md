@@ -10,7 +10,7 @@ A simple full-stack web application with:
 ---
 
 ## 📋 What You Need
-
+   
 You have **two options** for running this project:
 
 ### Option A: Local Development (Recommended for Development)

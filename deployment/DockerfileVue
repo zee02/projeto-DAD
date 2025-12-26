@@ -1,16 +1,23 @@
 FROM oven/bun:1 AS build-stage
 WORKDIR /app
 
-# Build-time config (passed via --build-arg). Defaults keep behavior unchanged.
-ARG VITE_API_BASE_URL=""
-ARG VITE_WS_CONNECTION=""
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-ENV VITE_WS_CONNECTION=${VITE_WS_CONNECTION}
+# Build-time config (passed via --build-arg)
+ARG VITE_API_DOMAIN="localhost:8000"
+ARG VITE_WS_CONNECTION="ws://localhost:3000"
 
-COPY package.json  ./
-RUN bun install
+COPY package.json package-lock.json* ./
+RUN rm -rf node_modules .bun && bun install --frozen-lockfile
 
 COPY . .
+
+# Remove local env files that might override build args
+RUN rm -f .env.local
+
+# Create .env.production with the build args
+RUN echo "VITE_API_DOMAIN=${VITE_API_DOMAIN}" > .env.production && \
+    echo "VITE_WS_CONNECTION=${VITE_WS_CONNECTION}" >> .env.production
+
+# Build with production mode
 RUN bun run build
 
 FROM nginx:alpine
