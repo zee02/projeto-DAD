@@ -23,8 +23,16 @@ if (viteApiBase) {
     ? viteApiDomain.replace(/\/$/, '')
     : `http://${viteApiDomain}`
 } else {
-  console.warn('[main.js] VITE_API_DOMAIN not set; using window.location.origin')
-  serverBaseURL = window.location.origin.replace(/\/$/, '')
+  // Dev-friendly fallback: if running Vite on 5173/5174, assume API on 8000
+  const origin = window.location.origin.replace(/\/$/, '')
+  const port = window.location.port
+  if (port === '5173' || port === '5174') {
+    serverBaseURL = 'http://localhost:8000'
+    console.warn('[main.js] Dev fallback: using http://localhost:8000 for API base')
+  } else {
+    console.warn('[main.js] VITE_API_DOMAIN not set; using window.location.origin')
+    serverBaseURL = origin
+  }
 }
 
 // API base is serverBaseURL + '/api' (avoid double slashes)
