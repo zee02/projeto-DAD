@@ -115,19 +115,21 @@ const scheduleBotPlay = () => {
   }, 1500)
 }
 
+const showEndModal = ref(false)
+const endSummary = ref({ text: '', winner: null })
+
 const showEndMessage = async () => {
   if (!state.value) return
   const { scores, winner } = state.value
   if (winner === 'player') {
-    message.value = `You win! (${scores.player} vs ${scores.bot})`
+    endSummary.value = { text: `You win! (${scores.player} vs ${scores.bot})`, winner: 'player' }
   } else if (winner === 'bot') {
-    message.value = `You lose. (${scores.player} vs ${scores.bot})`
+    endSummary.value = { text: `You lose. (${scores.player} vs ${scores.bot})`, winner: 'bot' }
   } else {
-    message.value = `Draw. (${scores.player} vs ${scores.bot})`
+    endSummary.value = { text: `Draw. (${scores.player} vs ${scores.bot})`, winner: null }
   }
-
-  // Salvar jogo na base de dados
-  await saveGameToDatabase()
+  // Show confirmation modal; save occurs on confirmation
+  showEndModal.value = true
 }
 
 const saveGameToDatabase = async () => {
@@ -182,6 +184,15 @@ const restart = () => {
 // voltar ao home
 const goBack = () => {
   router.push('/')
+}
+
+const confirmEnd = async () => {
+  try {
+    await saveGameToDatabase()
+  } finally {
+    showEndModal.value = false
+    router.push('/')
+  }
 }
 
 const suitSymbol = suit => SUIT_SYMBOL[suit] || '?'
@@ -381,6 +392,19 @@ const getCardBackImagePath = () => '/cards/semFace.png'
           </button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- End-of-game modal -->
+  <div v-if="showEndModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+      <h2 class="text-xl font-semibold mb-2">Game Over</h2>
+      <p class="text-sm text-slate-700 mb-4">{{ endSummary.text }}</p>
+      <div class="flex justify-end gap-2">
+        <button class="px-4 py-2 rounded-lg bg-muted text-muted-foreground hover:bg-muted/80" @click="restart">Restart</button>
+        <button class="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/80" @click="confirmEnd">OK</button>
+      </div>
+      <p v-if="!authStore.user" class="mt-3 text-xs text-red-600">Login required to save game.</p>
     </div>
   </div>
 </template>
