@@ -282,6 +282,11 @@ export class BiscaEngine {
       this.phase = 'no-draw'
     }
 
+    // Atualizar pontuações parciais após cada vaza
+    const playerPointsSoFar = this.computePoints(this.playerTricks)
+    const botPointsSoFar = this.computePoints(this.botTricks)
+    this.scores = { player: playerPointsSoFar, bot: botPointsSoFar }
+
     // fim de jogo?
     if (
       this.isDeckEmpty() &&
