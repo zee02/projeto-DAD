@@ -33,6 +33,7 @@ const matchResult = ref(null)
 const showSurrenderConfirm = ref(false)
 const showTimeoutModal = ref(false)
 const timeoutResult = ref(null)
+const showEndModal = ref(false) // Added showEndModal as a ref
 // Fallback-aware effective bet amount for UI messages (e.g., surrender)
 const effectiveBetAmount = computed(() => {
   // Priority: betAmount (set from game:start) > sessionStorage > match.betPerGame > payload
@@ -457,32 +458,28 @@ onMounted(() => {
     console.log('Match finished:', payload)
     matchFinished.value = true
     matchResult.value = payload
-    
-    // Show notification only if not suppressed (e.g., surrender already notified)
-    if (!suppressMatchNotifs.value) {
-      const isWinner = payload.winner === myOwner.value
-      if (isWinner) {
-        addNotification(`💰 You won the match! +${payload.winner === 'player1' ? payload.match.player1.coinsWon : payload.match.player2.coinsWon} coins`, 'success', '🏆', 4000)
-      } else {
-        addNotification(`Match finished`, 'info', '🎮', 3000)
-      }
+    // Modal igual ao singleplayer
+    if (payload.winner === myOwner.value) {
+      endSummary.value = { text: 'You win!', winner: 'player' }
+      addNotification('🎉 You won the match!', 'success', '🏆', 4000)
+    } else {
+      endSummary.value = { text: 'You lose.', winner: 'opponent' }
+      addNotification('❌ You lost the match.', 'error', '😔', 4000)
     }
-    
-    gameMessage.value = `${
-      payload.winner === myOwner.value ? 'You' : 'Opponent'
-    } won the match!`
-    
+    showEndModal.value = true
     // Award coins to winner
     const winnerId = payload.winner === 'player1' 
       ? payload.match.player1.userId 
       : payload.match.player2.userId
-    // Winner gets the full pot
     const totalPot = Number(payload.totalBet || 0)
     awardCoinsToWinner(winnerId, totalPot)
     deductedGamesCount.value = 0
-    
     // Salvar match na database
     saveMatchToDatabase(payload)
+    // Guardar o último jogo na base de dados de cada jogador
+    if (payload.lastGame) {
+      saveGameToDatabase(payload.lastGame)
+    }
   }
   socketStore.socket.on('match:finished', socketHandlers.onMatchFinished)
 
@@ -651,28 +648,37 @@ onBeforeUnmount(() => {
   gameId.value = null
   matchId.value = null
   gameResult.value = null
-  gameFinished.value = false
-  matchFinished.value = false
-  matchResult.value = null
-  suppressRoundNotifs.value = false
-  suppressMatchNotifs.value = false
-  selectedCard.value = null
-  isPlayingCard.value = false
-  showSurrenderConfirm.value = false
-  showTimeoutModal.value = false
-  timeoutResult.value = null
-  gameMessage.value = ''
-  errorMessage.value = ''
-  opponentUserId.value = null
-  betAmount.value = 0
-  
-  // Clean up session storage
-  sessionStorage.removeItem('matchBetAmount')
-})
+    matchFinished.value = true
+    matchResult.value = payload
+    // Modal igual ao singleplayer
+    if (payload.winner === myOwner.value) {
+      endSummary.value = { text: 'You win!', winner: 'player' }
+      addNotification('🎉 You won the match!', 'success', '🏆', 4000)
+    } else {
+      endSummary.value = { text: 'You lose.', winner: 'opponent' }
+      addNotification('❌ You lost the match.', 'error', '😔', 4000)
+    }
+    showEndModal.value = true
+    // Award coins to winner
+    const winnerId = payload.winner === 'player1' 
+      ? payload.match.player1.userId 
+      : payload.match.player2.userId
+    const totalPot = Number(payload.totalBet || 0)
+    awardCoinsToWinner(winnerId, totalPot)
+    deductedGamesCount.value = 0
+    // Salvar match na database
+    saveMatchToDatabase(payload)
+    // Guardar o último jogo na base de dados de cada jogador
+    if (payload.lastGame) {
+      saveGameToDatabase(payload.lastGame)
+    }
 
-// Handle game finish
-const goHome = () => {
-  router.push('/')
+    // Auto-redirect to home after 6 seconds for both winner and loser
+    setTimeout(() => {
+    if (showEndModal.value) {
+      goBack()
+    }
+  }, 6000)
 }
 </script>
 
@@ -945,17 +951,13 @@ const goHome = () => {
 
     <!-- Game Finished Modal -->
     <div
-      v-if="matchFinished && matchResult"
+      v-if="showEndModal && endSummary"
       class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
     >
       <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
         <h2 class="text-3xl font-bold text-gray-900">Match Finished! 🏆</h2>
         <p class="text-xl text-gray-600">
-          {{
-            matchResult.winner === myOwner
-              ? 'You won!'
-              : 'You lost!'
-          }}
+          {{ endSummary.text }}
         </p>
         <p class="text-2xl font-bold text-yellow-600">
           💰 Match completed
