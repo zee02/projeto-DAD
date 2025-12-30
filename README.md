@@ -248,9 +248,7 @@ npm install
 #### 4.2 Start WebSocket Server
 
 ```bash
-node server.js
-# or
-npm start
+npm run dev
 ```
 
 The WebSocket server will be running on `http://localhost:3000`
