@@ -169,10 +169,14 @@ const saveGameToDatabase = async () => {
   }
 
   try {
+    console.log('Sending gameData:', gameData)
     await apiStore.postSaveGame(gameData)
     console.log('Game saved successfully')
   } catch (error) {
     console.error('Failed to save game:', error)
+    if (error.response?.data) {
+      console.error('API error details:', error.response.data)
+    }
   }
 }
 
