@@ -8,9 +8,11 @@
           <p class="text-muted-foreground text-sm mt-2">View all player rankings across all stats</p>
         </div>
         <button 
-          @click="() => { fetchAll(); searchQuery = '' }"
-          class="px-4 py-2 bg-primary hover:bg-primary/80 text-primary-foreground rounded-lg font-semibold transition-colors flex items-center gap-2 w-fit">
-          <span>↻</span> Refresh
+          @click="handleRefresh"
+          :disabled="isRefreshing"
+          class="px-4 py-2 bg-white border border-primary text-primary rounded-lg font-semibold transition-colors flex items-center gap-2 w-fit shadow-sm hover:bg-primary/10 disabled:opacity-60 disabled:cursor-not-allowed">
+          <span :class="isRefreshing ? 'animate-spin' : ''" class="inline-flex items-center">↻</span>
+          <span>{{ isRefreshing ? 'Refreshing...' : 'Refresh' }}</span>
         </button>
       </div>
     </div>
@@ -154,6 +156,7 @@ const sortDir = ref('desc')
 const perPage = ref(25)
 const currentPage = ref(1)
 const searchQuery = ref('')
+const isRefreshing = ref(false)
 
 const filteredCombined = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -207,6 +210,7 @@ const computeRankMaps = () => {
 
 const fetchAll = async () => {
   try {
+    isRefreshing.value = true
     // fetch top N from each leaderboard and merge locally
     const per = 200
     const [wRes, cRes, fRes, gRes] = await Promise.all([
@@ -248,7 +252,15 @@ const fetchAll = async () => {
   } catch (e) {
     console.error(e)
     toast.error('Failed to load leaderboards')
+  } finally {
+    isRefreshing.value = false
   }
+}
+
+const handleRefresh = () => {
+  if (isRefreshing.value) return
+  searchQuery.value = ''
+  fetchAll()
 }
 
 onMounted(fetchAll)
