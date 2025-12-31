@@ -532,15 +532,8 @@ onMounted(() => {
     gameFinished.value = true
     gameResult.value = payload
     
-    // Show notification only if not suppressed (e.g., surrender already notified)
-    if (!suppressRoundNotifs.value) {
-      const isWinner = payload.winner === myOwner.value
-      if (isWinner) {
-        addNotification('🎉 You won this round!', 'success', '🏆', 3000)
-      } else {
-        addNotification('❌ You lost this round', 'info', '😔', 3000)
-      }
-    }
+    // Suppress toasts here; the modal is sufficient
+    suppressRoundNotifs.value = true
   }
   socketStore.socket.on('game:finished', socketHandlers.onGameFinished)
 
@@ -552,10 +545,8 @@ onMounted(() => {
     // Modal igual ao singleplayer
     if (payload.winner === myOwner.value) {
       endSummary.value = { text: 'You win!', winner: 'player' }
-      addNotification('🎉 You won the match!', 'success', '🏆', 4000)
     } else {
       endSummary.value = { text: 'You lose.', winner: 'opponent' }
-      addNotification('❌ You lost the match.', 'error', '😔', 4000)
     }
     showEndModal.value = true
     // Award coins to winner
@@ -594,8 +585,6 @@ onMounted(() => {
     
     const isWinner = payload.winner === user.value.id
     const payout = Number(effectiveBetAmount.value || betAmount.value || 0) * 2
-    addNotification(`Opponent disconnected. You won by default! +${payout} coins`, 'success', '✅', 4000)
-    
     // Populate game result for display
     gameFinished.value = true
     gameResult.value = {
@@ -625,11 +614,7 @@ onMounted(() => {
     console.log('Opponent surrendered:', payload)
     const isWinner = payload.winner === user.value.id
     const payout = Number(effectiveBetAmount.value || betAmount.value || 0) * 2
-    if (isWinner) {
-      addNotification(`🏁 Opponent surrendered! You won! +${payout} coins`, 'success', '✅', 4000)
-    } else {
-      addNotification('Game ended', 'info', '🏁', 3000)
-    }
+    // Suppress surrender toasts; modal handles UX
     gameFinished.value = true
     suppressRoundNotifs.value = true
     suppressMatchNotifs.value = true
