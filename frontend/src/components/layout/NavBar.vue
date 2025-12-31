@@ -1,6 +1,6 @@
 <template>
     <div>
-        <NavigationMenu>
+        <NavigationMenu v-model="activeMenu">
             <NavigationMenuList class="justify-around gap-8">
 
                 <NavigationMenuItem>
@@ -9,7 +9,7 @@
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 
-                <NavigationMenuItem v-if="userLoggedIn">
+                <NavigationMenuItem v-if="userLoggedIn" value="stats">
                     <NavigationMenuTrigger>Stats</NavigationMenuTrigger>
                     <NavigationMenuContent>
                         <li>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import {
     NavigationMenu,
     NavigationMenuContent,
@@ -84,6 +84,7 @@ const emits = defineEmits(['logout'])
 const { userLoggedIn, user } = defineProps(['userLoggedIn', 'user'])
 
 const showDropdown = ref(false)
+const activeMenu = ref('')
 
 const toggleDropdown = () => {
     showDropdown.value = !showDropdown.value
@@ -92,6 +93,12 @@ const toggleDropdown = () => {
 const closeDropdown = () => {
     showDropdown.value = false
 }
+
+watch(activeMenu, (value) => {
+    if (value === 'stats' && showDropdown.value) {
+        closeDropdown()
+    }
+})
 
 const handleLogout = () => {
     showDropdown.value = false
