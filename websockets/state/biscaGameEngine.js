@@ -62,10 +62,14 @@ export class BiscaGameEngine {
   }
 
   player1PlayCard(cardId) {
+    console.log(`[player1PlayCard] Playing card ${cardId}. Hand BEFORE: [${this.player1Hand.map(c => c.id).join(', ')}]`);
+    
     const cardIndex = this.player1Hand.findIndex(c => c.id === cardId);
     if (cardIndex === -1) {
+      console.log(`[player1PlayCard] ERROR: Card not found in hand!`);
       return { success: false, message: 'Card not found in hand' };
     }
+    
     // Validar jogada na fase sem compra (seguir naipe se possível)
     if (this.phase === 'no-draw' && this.table.length === 1) {
       const leadSuit = this.table[0].card.suit;
@@ -79,18 +83,19 @@ export class BiscaGameEngine {
     const card = this.player1Hand[cardIndex];
     this.table.push({ card, owner: 'player1' });
     this.player1Hand.splice(cardIndex, 1);
-
-    // Draw a new card immediately if deck has cards and hand is below 3
-    if (this.deck.length > 0 && this.player1Hand.length < 3) {
-      this.player1Hand.push(this.deck.pop());
-    }
+    
+    console.log(`[player1PlayCard] Card REMOVED. Hand AFTER: [${this.player1Hand.map(c => c.id).join(', ')}]`);
+    console.log(`[player1PlayCard] Table now has ${this.table.length} cards. Deck has ${this.deck.length} cards remaining.`);
 
     return { success: true, card };
   }
 
   player2PlayCard(cardId) {
+    console.log(`[player2PlayCard] Playing card ${cardId}. Hand BEFORE: [${this.player2Hand.map(c => c.id).join(', ')}]`);
+    
     const cardIndex = this.player2Hand.findIndex(c => c.id === cardId);
     if (cardIndex === -1) {
+      console.log(`[player2PlayCard] ERROR: Card not found in hand!`);
       return { success: false, message: 'Card not found in hand' };
     }
     // Validar jogada na fase sem compra (seguir naipe se possível)
@@ -106,11 +111,8 @@ export class BiscaGameEngine {
     const card = this.player2Hand[cardIndex];
     this.table.push({ card, owner: 'player2' });
     this.player2Hand.splice(cardIndex, 1);
-
-    // Draw a new card immediately if deck has cards and hand is below 3
-    if (this.deck.length > 0 && this.player2Hand.length < 3) {
-      this.player2Hand.push(this.deck.pop());
-    }
+    console.log(`[player2PlayCard] Card REMOVED. Hand AFTER: [${this.player2Hand.map(c => c.id).join(', ')}]`);
+    console.log(`[player2PlayCard] Table now has ${this.table.length} cards. Deck has ${this.deck.length} cards remaining.`);
 
     return { success: true, card };
   }
@@ -118,6 +120,18 @@ export class BiscaGameEngine {
   /**
    * Resolve quem venceu o trick
    * Retorna 'player1' ou 'player2'
+   */
+  /**
+   * Resolve quem venceu o trick
+   * Retorna 'player1' ou 'player2'
+   * 
+   * CARD DRAW SEQUENCE (strictly enforced):
+   * 1. Both players play their cards (playCard removes from hand)
+   * 2. resolveTrick is called when table has 2 cards
+   * 3. Winner is determined
+   * 4. Table is cleared
+   * 5. CARDS ARE DRAWN: Winner draws first, loser draws second
+   * 6. Next turn begins
    */
   resolveTrick() {
     if (this.table.length !== 2) {
@@ -153,6 +167,37 @@ export class BiscaGameEngine {
 
     this.table = [];
 
+    // Draw new cards after trick resolution - ONLY after both players have played
+    // Winner draws first, then loser
+    console.log(`[resolveTrick] Drawing cards for winner ${winner}. Deck size: ${this.deck.length}`);
+    
+    if (this.deck.length > 0) {
+      // Winner draws first
+      if (winner === 'player1' && this.player1Hand.length < this.handSize) {
+        const card = this.deck.pop();
+        this.player1Hand.push(card);
+        console.log(`[resolveTrick] Player1 (winner) drew: ${card.id}. New hand size: ${this.player1Hand.length}`);
+      } else if (winner === 'player2' && this.player2Hand.length < this.handSize) {
+        const card = this.deck.pop();
+        this.player2Hand.push(card);
+        console.log(`[resolveTrick] Player2 (winner) drew: ${card.id}. New hand size: ${this.player2Hand.length}`);
+      }
+    }
+
+    if (this.deck.length > 0) {
+      // Loser draws second
+      const loser = winner === 'player1' ? 'player2' : 'player1';
+      if (loser === 'player1' && this.player1Hand.length < this.handSize) {
+        const card = this.deck.pop();
+        this.player1Hand.push(card);
+        console.log(`[resolveTrick] Player1 (loser) drew: ${card.id}. New hand size: ${this.player1Hand.length}`);
+      } else if (loser === 'player2' && this.player2Hand.length < this.handSize) {
+        const card = this.deck.pop();
+        this.player2Hand.push(card);
+        console.log(`[resolveTrick] Player2 (loser) drew: ${card.id}. New hand size: ${this.player2Hand.length}`);
+      }
+    }
+
     // Check if game should end
     // Game ends when deck is empty AND both hands are empty
     const shouldEndGame = this.deck.length === 0 && this.player1Hand.length === 0 && this.player2Hand.length === 0;
@@ -167,23 +212,29 @@ export class BiscaGameEngine {
     return winner;
   }
 
+
+  /**
+   * Deprecated: Cards are now drawn in resolveTrick()
+   * This method is kept for reference but should not be called
+   */
   drawCards() {
+    console.warn('[drawCards] This method is deprecated. Cards should be drawn in resolveTrick()');
     // Quem ganhou o trick tira primeiro (já está como currentPlayer)
     const firstPlayer = this.currentPlayer;
     const secondPlayer = firstPlayer === 'player1' ? 'player2' : 'player1';
 
     if (this.deck.length > 0) {
-      if (firstPlayer === 'player1' && this.player1Hand.length < 3) {
+      if (firstPlayer === 'player1' && this.player1Hand.length < this.handSize) {
         this.player1Hand.push(this.deck.pop());
-      } else if (firstPlayer === 'player2' && this.player2Hand.length < 3) {
+      } else if (firstPlayer === 'player2' && this.player2Hand.length < this.handSize) {
         this.player2Hand.push(this.deck.pop());
       }
     }
 
     if (this.deck.length > 0) {
-      if (secondPlayer === 'player1' && this.player1Hand.length < 3) {
+      if (secondPlayer === 'player1' && this.player1Hand.length < this.handSize) {
         this.player1Hand.push(this.deck.pop());
-      } else if (secondPlayer === 'player2' && this.player2Hand.length < 3) {
+      } else if (secondPlayer === 'player2' && this.player2Hand.length < this.handSize) {
         this.player2Hand.push(this.deck.pop());
       }
     }

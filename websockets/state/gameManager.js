@@ -322,6 +322,7 @@ export class GameManager {
 
   /**
    * Obter estado do jogo para enviar ao cliente
+   * Returns state for both players (with opponent hand hidden)
    */
   getGameState(gameId) {
     const game = this.games.get(gameId);
@@ -351,6 +352,52 @@ export class GameManager {
         score: engineState.scores.player2,
         marks: engineState.marks.player2,
         hand: engineState.player2Hand,
+        trickCount: engineState.player2Tricks.length,
+      },
+      table: engineState.table,
+      trumpCard: engineState.trumpCard,
+      deckRemaining: engineState.deck.length,
+      winner: game.winner,
+      startedAt: game.startedAt,
+      endedAt: game.endedAt,
+    };
+  }
+
+  /**
+   * Get personalized game state for a specific player
+   * Hides opponent's hand and pending card
+   */
+  getPlayerGameState(gameId, userId) {
+    const game = this.games.get(gameId);
+    if (!game) return null;
+
+    const engineState = game.engine.getState();
+    const isPlayer1 = game.player1.userId === userId;
+
+    return {
+      gameId: game.id,
+      status: game.status,
+      currentPlayer: game.currentPlayer,
+      turnTimeRemaining: Math.max(
+        0,
+        game.turnTimeLimit - (Date.now() - game.turnStartTime)
+      ),
+      player1: {
+        userId: game.player1.userId,
+        name: game.player1.name,
+        score: engineState.scores.player1,
+        marks: engineState.marks.player1,
+        hand: isPlayer1 ? engineState.player1Hand : [], // Only show own hand
+        handSize: engineState.player1Hand.length, // Show hand size for opponent
+        trickCount: engineState.player1Tricks.length,
+      },
+      player2: {
+        userId: game.player2.userId,
+        name: game.player2.name,
+        score: engineState.scores.player2,
+        marks: engineState.marks.player2,
+        hand: !isPlayer1 ? engineState.player2Hand : [], // Only show own hand
+        handSize: engineState.player2Hand.length, // Show hand size for opponent
         trickCount: engineState.player2Tricks.length,
       },
       table: engineState.table,

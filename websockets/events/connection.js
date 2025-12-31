@@ -96,17 +96,19 @@ export const handleConnectionEvents = (io, socket) => {
         io.sockets.sockets.get(lobby.player2.socketId)?.join(`game_${gameId}`);
         console.log(`[Game] Both players joined room: game_${gameId}`);
 
-        // Notificar ambos players
-        const gameStatePayload = gameManager.getGameState(gameId);
+        // Get personalized game state for each player
+        const player1GameState = gameManager.getPlayerGameState(gameId, lobby.player1.userId);
+        const player2GameState = gameManager.getPlayerGameState(gameId, lobby.player2.userId);
+        
         console.log(
           `[Lobby] Emitting game:start to player1 (${lobby.player1.socketId}):`,
-          { gameId, matchId: match.id, gameState: gameStatePayload }
+          { gameId, matchId: match.id }
         );
 
         io.to(lobby.player1.socketId).emit('game:start', {
           gameId,
           matchId: match.id,
-          gameState: gameStatePayload,
+          gameState: player1GameState,
           opponentUserId: lobby.player2.userId,
           betAmount,
           gameType,
@@ -115,7 +117,7 @@ export const handleConnectionEvents = (io, socket) => {
         io.to(lobby.player2.socketId).emit('game:start', {
           gameId,
           matchId: match.id,
-          gameState: gameStatePayload,
+          gameState: player2GameState,
           opponentUserId: lobby.player1.userId,
           betAmount,
           gameType,
@@ -172,7 +174,8 @@ export const handleConnectionEvents = (io, socket) => {
       return
     }
 
-    const state = gameManager.getGameState(gameId)
+    const userId = socket.data.userId;
+    const state = gameManager.getPlayerGameState(gameId, userId)
     if (!state) {
       socket.emit('game:error', { message: `Game ${gameId} not found` })
       return
@@ -197,25 +200,30 @@ export const handleConnectionEvents = (io, socket) => {
       const result = gameManager.playCard(gameId, userId, cardId);
 
       if (result.status === 'success') {
-        const gameState = result.gameState;
         const game = gameManager.getGame(gameId);
 
         // Encontrar IDs dos players
         const player1Socket = game.player1.socketId;
         const player2Socket = game.player2.socketId;
 
-        // Enviar estado imediatamente para mostrar as cartas na mesa
-        io.to(player1Socket)
-          .to(player2Socket)
-          .emit('game:state_update', gameState);
+        // Send personalized state to each player (hiding opponent's hand)
+        const player1State = gameManager.getPlayerGameState(gameId, game.player1.userId);
+        const player2State = gameManager.getPlayerGameState(gameId, game.player2.userId);
+
+        console.log(`[game:play_card] STATE BEING SENT TO PLAYERS:`);
+        console.log(`  P1 receives: P1 hand=[${player1State.player1.hand.map(c => c.id).join(', ')}], P2 hand=[], Table=[${player1State.table.map(c => c.card.id).join(', ')}]`);
+        console.log(`  P2 receives: P1 hand=[], P2 hand=[${player2State.player2.hand.map(c => c.id).join(', ')}], Table=[${player2State.table.map(c => c.card.id).join(', ')}]`);
+
+        io.to(player1Socket).emit('game:state_update', player1State);
+        io.to(player2Socket).emit('game:state_update', player2State);
 
         // Se há 2 cartas na mesa (trick completo), adicionar delay antes de resolver
-        if (gameState.table && gameState.table.length === 2) {
+        if (player1State.table && player1State.table.length === 2) {
           // Emit a trick_complete event to show both cards briefly
           io.to(player1Socket)
             .to(player2Socket)
             .emit('game:trick_complete', {
-              table: gameState.table,
+              table: player1State.table,
               message: 'Resolving trick...'
             });
 
@@ -228,29 +236,37 @@ export const handleConnectionEvents = (io, socket) => {
             
             if (resolveResult.status === 'game_finished') {
               // Game ended after this trick
-              const finalGameState = resolveResult.gameState;
-              console.log(`[game:play_card] Game finished! Emitting final state with table length:`, finalGameState.table.length);
-              io.to(player1Socket)
-                .to(player2Socket)
-                .emit('game:state_update', finalGameState);
+              console.log(`[game:play_card] Game finished! Emitting final state with table length:`, resolveResult.gameState.table.length);
+              
+              // Send personalized final state to each player
+              const finalPlayer1State = gameManager.getPlayerGameState(gameId, game.player1.userId);
+              const finalPlayer2State = gameManager.getPlayerGameState(gameId, game.player2.userId);
+              
+              io.to(player1Socket).emit('game:state_update', finalPlayer1State);
+              io.to(player2Socket).emit('game:state_update', finalPlayer2State);
               
               setTimeout(() => {
                 handleGameEnd(io, gameId);
               }, 500);
             } else if (resolveResult.status === 'success') {
               // Get updated state after trick is resolved
-              const updatedGameState = resolveResult.gameState;
-              console.log(`[game:play_card] Trick resolved successfully. Emitting state with table length:`, updatedGameState.table.length);
+              console.log(`[game:play_card] Trick resolved successfully. Emitting state with table length:`, resolveResult.gameState.table.length);
               
-              // Send updated state after trick resolution
-              io.to(player1Socket)
-                .to(player2Socket)
-                .emit('game:state_update', updatedGameState);
+              // Fetch fresh game reference for trick resolution
+              const gameAfterTrick = gameManager.getGame(gameId);
+              
+              // Send personalized state after trick resolution
+              const updatedPlayer1State = gameManager.getPlayerGameState(gameId, gameAfterTrick.player1.userId);
+              const updatedPlayer2State = gameManager.getPlayerGameState(gameId, gameAfterTrick.player2.userId);
+              
+              console.log(`[game:play_card] After trick resolved. P1 hand: ${updatedPlayer1State.player1.hand.length}, P2 hand: ${updatedPlayer2State.player2.hand.length}, Table: ${updatedPlayer1State.table.length}`);
+              
+              io.to(player1Socket).emit('game:state_update', updatedPlayer1State);
+              io.to(player2Socket).emit('game:state_update', updatedPlayer2State);
 
               // Ajustar timer para o próximo player
               clearTimeout(turnTimers.get(gameId));
-              const game = gameManager.getGame(gameId);
-              const nextPlayer = game.currentPlayer;
+              const nextPlayer = gameAfterTrick.currentPlayer;
               const nextPlayerSocket =
                 nextPlayer === 'player1' ? player1Socket : player2Socket;
               startTurnTimer(io, gameId, nextPlayerSocket);
@@ -387,11 +403,19 @@ function startTurnTimer(io, gameId, playerSocketId) {
 
   // Enviar atualizações de estado a cada 500ms para manter o timer sincronizado
   const stateInterval = setInterval(() => {
-    const gameState = gameManager.getGameState(gameId);
-    if (gameState) {
-      // Broadcast to all sockets in the game room (handles reconnections automatically)
-      io.to(`game_${gameId}`)
-        .emit('game:state_update', gameState);
+    const game = gameManager.getGame(gameId);
+    if (game && game.status === 'playing') {
+      // Only send state updates if not in the middle of resolving a trick
+      // (to avoid race conditions with the trick resolution timeout)
+      const engineState = game.engine.getState();
+      if (engineState.table.length === 0 || engineState.table.length === 1) {
+        // Safe to send state when table is empty or has only 1 card
+        const player1State = gameManager.getPlayerGameState(gameId, game.player1.userId);
+        const player2State = gameManager.getPlayerGameState(gameId, game.player2.userId);
+        
+        io.to(game.player1.socketId).emit('game:state_update', player1State);
+        io.to(game.player2.socketId).emit('game:state_update', player2State);
+      }
     }
   }, 500);
 
