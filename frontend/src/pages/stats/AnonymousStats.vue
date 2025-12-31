@@ -24,7 +24,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       <div class="p-4 bg-white rounded shadow">
         <div class="text-sm text-gray-500 mb-2">Common Victories (aggregated)</div>
         <ul class="space-y-1">
@@ -43,39 +43,39 @@
           </li>
         </ul>
       </div>
+    </div>
 
-      <div class="p-4 bg-white rounded shadow">
-        <div class="text-sm text-gray-500 mb-2">Global Records (anonymous)</div>
-        <div class="space-y-2">
-          <div>
-            <div class="text-xs text-gray-500">Top Single-Game Scores</div>
-            <ul class="mt-1">
-              <li v-for="rec in stats.global_records.top_scores" :key="rec.game_id" class="flex justify-between">
-                <span>{{ rec.player || 'Player #?' }}</span>
-                <span class="font-bold">{{ rec.points }}</span>
-              </li>
-            </ul>
-          </div>
+    <div class="p-4 bg-white rounded shadow mb-6">
+      <div class="text-sm text-gray-500 mb-4">Global Records (anonymous)</div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <div class="text-xs text-gray-500 font-semibold mb-3">Top Single-Game Scores</div>
+          <ul class="space-y-1">
+            <li v-for="rec in stats.global_records.top_scores" :key="rec.game_id" class="flex justify-between">
+              <span>{{ rec.player || 'Player #?' }}</span>
+              <span class="font-bold">{{ rec.points }}</span>
+            </li>
+          </ul>
+        </div>
 
-          <div>
-            <div class="text-xs text-gray-500 mt-2">Top Winners (by total wins)</div>
-            <ul class="mt-1">
-              <li v-for="(rec, idx) in stats.global_records.top_winners" :key="idx" class="flex justify-between">
-                <span>{{ rec.player }}</span>
-                <span class="font-bold">{{ rec.wins }}</span>
-              </li>
-            </ul>
-          </div>
+        <div>
+          <div class="text-xs text-gray-500 font-semibold mb-3">Top Winners (by total wins)</div>
+          <ul class="space-y-1">
+            <li v-for="(rec, idx) in stats.global_records.top_winners" :key="idx" class="flex justify-between">
+              <span>{{ rec.player }}</span>
+              <span class="font-bold">{{ rec.wins }}</span>
+            </li>
+          </ul>
+        </div>
 
-          <div>
-            <div class="text-xs text-gray-500 mt-2">Longest Games (s)</div>
-            <ul class="mt-1">
-              <li v-for="rec in stats.global_records.longest_games" :key="rec.game_id" class="flex justify-between">
-                <span>Game #{{ rec.game_id }}</span>
-                <span class="font-bold">{{ Math.round(rec.duration_seconds) }}</span>
-              </li>
-            </ul>
-          </div>
+        <div>
+          <div class="text-xs text-gray-500 font-semibold mb-3">Longest Games (s)</div>
+          <ul class="space-y-1">
+            <li v-for="rec in stats.global_records.longest_games" :key="rec.game_id" class="flex justify-between">
+              <span>Game #{{ rec.game_id }}</span>
+              <span class="font-bold">{{ Math.round(rec.duration_seconds) }}</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
