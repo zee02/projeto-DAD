@@ -33,7 +33,10 @@ const matchResult = ref(null)
 const showSurrenderConfirm = ref(false)
 const showTimeoutModal = ref(false)
 const timeoutResult = ref(null)
-const showEndModal = ref(false) // Added showEndModal as a ref
+const showEndModal = ref(false) // Match finished modal
+const showGameEndedModal = ref(false) // Single game ended modal (after each game)
+const gameEndedResult = ref(null) // Store game ended data
+const showTrickResolving = ref(false) // Show trick resolving message
 // Fallback-aware effective bet amount for UI messages (e.g., surrender)
 const effectiveBetAmount = computed(() => {
   // Priority: betAmount (set from game:start) > sessionStorage > match.betPerGame > payload
@@ -57,6 +60,10 @@ const suppressMatchNotifs = ref(false)
 
 // Guard to avoid double coin awards per game
 const coinsAwarded = ref(false)
+
+// End summary and deducted games counter
+const endSummary = ref(null)
+const deductedGamesCount = ref(0)
 
 const addNotification = (message, type = 'info', icon = '', duration = 3000) => {
   const id = notificationIdCounter++
@@ -82,6 +89,8 @@ const addNotification = (message, type = 'info', icon = '', duration = 3000) => 
     onOpponentDisconnected: null,
     onGameSurrendered: null,
     onGameError: null,
+    onGameEnded: null,
+    onTrickComplete: null,
   }
 
 const myOwner = computed(() => {
@@ -293,6 +302,27 @@ const goHomeAfterDisconnect = () => {
   }, 300)
 }
 
+// Handle OK button click on game ended modal
+const handleGameEndedOk = () => {
+  showGameEndedModal.value = false
+  gameEndedResult.value = null
+  // Redirect to lobby
+  router.push('/multiplayer/lobby')
+}
+
+// Restart multiplayer game (return to lobby)
+const restartMultiplayer = () => {
+  showGameEndedModal.value = false
+  gameEndedResult.value = null
+  // Redirect to lobby for a new match
+  router.push('/multiplayer/lobby')
+}
+
+// Remove notification by id
+const removeNotification = (id) => {
+  notifications.value = notifications.value.filter(n => n.id !== id)
+}
+
 // Track if we already deducted coins for this game
 const coinsAlreadyDeducted = ref(false)
 
@@ -395,9 +425,18 @@ onMounted(() => {
     selectedCard.value = null
     isPlayingCard.value = false
     updateTurnTimer()
+    showTrickResolving.value = false // Hide resolving message
     gameMessage.value = ''
   }
   socketStore.socket.on('game:state_update', socketHandlers.onGameStateUpdate)
+
+  // Listening for trick complete (both cards played)
+  socketHandlers.onTrickComplete = (payload) => {
+    console.log('Trick complete:', payload)
+    showTrickResolving.value = true
+    gameMessage.value = payload.message || 'Resolving trick...'
+  }
+  socketStore.socket.on('game:trick_complete', socketHandlers.onTrickComplete)
 
   // Listening for game finished
   socketHandlers.onMatchGameResult = (payload) => {
@@ -560,6 +599,45 @@ onMounted(() => {
   }
   socketStore.socket.on('game:error', socketHandlers.onGameError)
 
+  // Listening for game:ended event (shows winner notification modal)
+  socketHandlers.onGameEnded = (payload) => {
+    console.log('Game ended:', payload)
+    const isWinner = payload.winner?.userId === user.value?.id
+    const isDraw = payload.isDraw
+    
+    // Create end summary similar to single-player
+    if (isDraw) {
+      endSummary.value = { 
+        text: `Draw. (${payload.scores.player1} vs ${payload.scores.player2})`, 
+        winner: null 
+      }
+    } else if (isWinner) {
+      endSummary.value = { 
+        text: `You win! (${myScore.value} vs ${opponentScore.value})`, 
+        winner: 'player' 
+      }
+    } else {
+      endSummary.value = { 
+        text: `You lose. (${myScore.value} vs ${opponentScore.value})`, 
+        winner: 'opponent' 
+      }
+    }
+    
+    gameEndedResult.value = {
+      winner: payload.winner,
+      isDraw: payload.isDraw,
+      scores: payload.scores,
+      player1: payload.player1,
+      player2: payload.player2,
+      isWinner: isWinner,
+      gameSaved: payload.gameSaved
+    }
+    
+    // Show the single-player-style modal
+    showGameEndedModal.value = true
+  }
+  socketStore.socket.on('game:ended', socketHandlers.onGameEnded)
+
   // Start turn timer interval - update timer every 100ms
   turnTimerInterval = setInterval(updateTurnTimer, 100)
   
@@ -642,44 +720,19 @@ onBeforeUnmount(() => {
   if (socketHandlers.onGameError) {
     socketStore.socket.off('game:error', socketHandlers.onGameError)
   }
+  if (socketHandlers.onGameEnded) {
+    socketStore.socket.off('game:ended', socketHandlers.onGameEnded)
+  }
+  if (socketHandlers.onTrickComplete) {
+    socketStore.socket.off('game:trick_complete', socketHandlers.onTrickComplete)
+  }
   
   // Reset game state to prevent stale data in next game
   gameState.value = null
   gameId.value = null
   matchId.value = null
   gameResult.value = null
-    matchFinished.value = true
-    matchResult.value = payload
-    // Modal igual ao singleplayer
-    if (payload.winner === myOwner.value) {
-      endSummary.value = { text: 'You win!', winner: 'player' }
-      addNotification('🎉 You won the match!', 'success', '🏆', 4000)
-    } else {
-      endSummary.value = { text: 'You lose.', winner: 'opponent' }
-      addNotification('❌ You lost the match.', 'error', '😔', 4000)
-    }
-    showEndModal.value = true
-    // Award coins to winner
-    const winnerId = payload.winner === 'player1' 
-      ? payload.match.player1.userId 
-      : payload.match.player2.userId
-    const totalPot = Number(payload.totalBet || 0)
-    awardCoinsToWinner(winnerId, totalPot)
-    deductedGamesCount.value = 0
-    // Salvar match na database
-    saveMatchToDatabase(payload)
-    // Guardar o último jogo na base de dados de cada jogador
-    if (payload.lastGame) {
-      saveGameToDatabase(payload.lastGame)
-    }
-
-    // Auto-redirect to home after 6 seconds for both winner and loser
-    setTimeout(() => {
-    if (showEndModal.value) {
-      goBack()
-    }
-  }, 6000)
-}
+})
 </script>
 
 <template>
@@ -781,6 +834,11 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
+      <!-- Resolving Message -->
+      <div v-if="showTrickResolving" class="mt-2 text-center text-base font-medium text-indigo-700 animate-pulse">
+        {{ gameMessage || 'Resolving trick...' }}
+      </div>
+
       <!-- Mesa (cartas jogadas) -->
       <div
         class="flex items-center justify-between py-6 px-6 border rounded-xl bg-slate-50"
@@ -805,32 +863,38 @@ onBeforeUnmount(() => {
           <div class="flex gap-8 items-end justify-center">
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">Opponent</span>
-              <div
-                v-if="gameState.table.find(p => localOwner(p.owner) === 'opponent')"
-                class="w-20 h-28 overflow-hidden shadow"
-              >
-                <img
-                  :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'opponent').card)"
-                  :alt="`Card`"
-                  class="w-full h-full object-cover"
-                />
-              </div>
-              <div v-else class="w-20 h-28 border rounded-lg bg-slate-200" />
+              <transition name="card-play" mode="out-in">
+                <div
+                  v-if="gameState.table.find(p => localOwner(p.owner) === 'opponent')"
+                  key="opponent-card"
+                  class="w-20 h-28 overflow-hidden shadow transform transition-all duration-300"
+                >
+                  <img
+                    :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'opponent').card)"
+                    :alt="`Card`"
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+                <div v-else key="opponent-empty" class="w-20 h-28 border rounded-lg bg-slate-200" />
+              </transition>
             </div>
 
             <div class="flex flex-col items-center">
               <span class="text-xs text-slate-500 mb-1">You</span>
-              <div
-                v-if="gameState.table.find(p => localOwner(p.owner) === 'me')"
-                class="w-20 h-28 overflow-hidden shadow"
-              >
-                <img
-                  :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'me').card)"
-                  :alt="`Card`"
-                  class="w-full h-full object-cover"
-                />
-              </div>
-              <div v-else class="w-20 h-28 border rounded-lg bg-slate-200" />
+              <transition name="card-play" mode="out-in">
+                <div
+                  v-if="gameState.table.find(p => localOwner(p.owner) === 'me')"
+                  key="my-card"
+                  class="w-20 h-28 overflow-hidden shadow transform transition-all duration-300"
+                >
+                  <img
+                    :src="getCardImagePath(gameState.table.find(p => localOwner(p.owner) === 'me').card)"
+                    :alt="`Card`"
+                    class="w-full h-full object-cover"
+                  />
+                </div>
+                <div v-else key="my-empty" class="w-20 h-28 border rounded-lg bg-slate-200" />
+              </transition>
             </div>
           </div>
         </div>
@@ -949,6 +1013,36 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Game Ended Modal - Match Style -->
+    <div
+      v-if="showGameEndedModal && endSummary"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+    >
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
+        <h2 class="text-3xl font-bold text-gray-900">Game Over 🎮</h2>
+        <p class="text-xl text-gray-600">
+          {{ endSummary.text }}
+        </p>
+        <div v-if="gameEndedResult?.gameSaved" class="text-sm text-green-600">
+          ✓ Game saved to database
+        </div>
+        <div class="flex flex-col gap-3">
+          <button 
+            class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
+            @click="handleGameEndedOk"
+          >
+            OK
+          </button>
+          <button 
+            class="w-full py-2 px-4 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition" 
+            @click="restartMultiplayer"
+          >
+            Return to Lobby
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Game Finished Modal -->
     <div
       v-if="showEndModal && endSummary"
@@ -1031,5 +1125,36 @@ onBeforeUnmount(() => {
 
 .notification-move {
   transition: transform 0.3s ease;
+}
+
+/* Card play animations */
+.card-play-enter-active {
+  animation: cardSlideIn 0.4s ease-out;
+}
+
+.card-play-leave-active {
+  animation: cardSlideOut 0.3s ease-in;
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardSlideOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.8);
+  }
 }
 </style>

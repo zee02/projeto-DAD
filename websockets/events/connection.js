@@ -199,23 +199,60 @@ export const handleConnectionEvents = (io, socket) => {
         const gameState = result.gameState;
         const game = gameManager.getGame(gameId);
 
-        // Enviar novo estado para ambos players
-        const lobby = lobbyManager.getLobby(
-          gameId.split('_')[1]
-        );
         // Encontrar IDs dos players
         const player1Socket = game.player1.socketId;
         const player2Socket = game.player2.socketId;
 
+        // Enviar estado imediatamente para mostrar as cartas na mesa
         io.to(player1Socket)
           .to(player2Socket)
           .emit('game:state_update', gameState);
 
-        // Se jogo acabou
-        if (gameState.status === 'finished') {
-          handleGameEnd(io, gameId);
+        // Se há 2 cartas na mesa (trick completo), adicionar delay antes de resolver
+        if (gameState.table && gameState.table.length === 2) {
+          // Emit a trick_complete event to show both cards briefly
+          io.to(player1Socket)
+            .to(player2Socket)
+            .emit('game:trick_complete', {
+              table: gameState.table,
+              message: 'Resolving trick...'
+            });
+
+          // Wait 2 seconds so players can see both cards
+          setTimeout(() => {
+            // NOW resolve the trick after cards were visible
+            const resolveResult = gameManager.resolveTrickDelayed(gameId);
+            
+            if (resolveResult.status === 'game_finished') {
+              // Game ended after this trick
+              const finalGameState = resolveResult.gameState;
+              io.to(player1Socket)
+                .to(player2Socket)
+                .emit('game:state_update', finalGameState);
+              
+              setTimeout(() => {
+                handleGameEnd(io, gameId);
+              }, 500);
+            } else if (resolveResult.status === 'success') {
+              // Get updated state after trick is resolved
+              const updatedGameState = resolveResult.gameState;
+              
+              // Send updated state after trick resolution
+              io.to(player1Socket)
+                .to(player2Socket)
+                .emit('game:state_update', updatedGameState);
+
+              // Ajustar timer para o próximo player
+              clearTimeout(turnTimers.get(gameId));
+              const game = gameManager.getGame(gameId);
+              const nextPlayer = game.currentPlayer;
+              const nextPlayerSocket =
+                nextPlayer === 'player1' ? player1Socket : player2Socket;
+              startTurnTimer(io, gameId, nextPlayerSocket);
+            }
+          }, 2000); // 2 second delay to show both cards
         } else {
-          // Ajustar timer para o próximo player
+          // Only one card played, just update timer for next player
           clearTimeout(turnTimers.get(gameId));
           const nextPlayer = game.currentPlayer;
           const nextPlayerSocket =
@@ -507,6 +544,25 @@ async function handleGameEnd(io, gameId) {
   if (saveResult.success && game.dbGameId && game.tricksToSave && game.tricksToSave.length > 0) {
     await gameManager.saveTricksToDatabase(game.dbGameId, game.tricksToSave);
   }
+
+  // Emit game:ended event with winner information for notification modal
+  const winnerPlayer = game.winner === 'player1' ? game.player1 : game.player2;
+  const isDraw = game.player1.score === game.player2.score;
+  
+  io.to(`game_${gameId}`)
+    .emit('game:ended', {
+      gameId,
+      winner: winnerPlayer,
+      isDraw,
+      scores: {
+        player1: game.player1.score,
+        player2: game.player2.score,
+      },
+      player1: game.player1,
+      player2: game.player2,
+      gameSaved: saveResult.success,
+      dbGameId: game.dbGameId,
+    });
 
   const match = bettingManager.getMatchForGame(gameId);
   if (match) {

@@ -116,57 +116,9 @@ export class GameManager {
       // Verificar se trick está completo (2 cartas na mesa)
       const state = game.engine.getState();
       if (state.table.length === 2) {
-        // Save cards info before resolving the trick
-        const tableEntry1 = state.table[0];
-        const tableEntry2 = state.table[1];
-        const card1 = tableEntry1.card;
-        const card2 = tableEntry2.card;
-        const card1Player = tableEntry1.owner === 'player1' ? game.player1 : game.player2;
-        const card2Player = tableEntry2.owner === 'player1' ? game.player1 : game.player2;
-        
-        // Automaticamente resolver trick no servidor
-        const trickWinner = game.engine.resolveTrick();
-        const winnerKey =
-          trickWinner === "player1" ? "player1" : "player2";
-        const winnerPlayer = game[winnerKey];
-
-        game.history.push({
-          timestamp: Date.now(),
-          player: winnerKey,
-          action: "won_trick",
-        });
-
-        // Get the updated state to get points
-        const updatedState = game.engine.getState();
-        const lastTrick = updatedState[`${winnerKey}Tricks`][updatedState[`${winnerKey}Tricks`].length - 1];
-        const pointsWon = lastTrick ? lastTrick.points : 0;
-
-        // Store trick data to save later when game ends
-        const trickNumber = updatedState.player1Tricks.length + updatedState.player2Tricks.length;
-        game.tricksToSave.push({
-          trick_number: trickNumber,
-          card1_id: card1.id,
-          card1_suit: card1.suit,
-          card1_rank: card1.rank,
-          card1_value: this.getCardValue(card1),
-          card1_player_id: card1Player.userId,
-          card2_id: card2.id,
-          card2_suit: card2.suit,
-          card2_rank: card2.rank,
-          card2_value: this.getCardValue(card2),
-          card2_player_id: card2Player.userId,
-          winner_user_id: winnerPlayer.userId,
-          points_won: pointsWon,
-          trump_suit: updatedState.trumpSuit,
-        });
-
-        // Se jogo acabou
-        if (updatedState.phase === "end") {
-          return this.finishGame(gameId);
-        }
-
-        // Próximo player é o que venceu o trick
-        game.currentPlayer = winnerKey;
+        // DON'T resolve trick yet - let connection.js handle it after delay
+        // Just return the state with both cards visible
+        // The trick will be resolved by calling resolveTrickDelayed()
       } else {
         // Passar a vez ao outro player
         game.currentPlayer =
@@ -218,6 +170,76 @@ export class GameManager {
       status: "surrendered",
       winner: game[winnerKey],
       loser: game[loserKey],
+      gameState: this.getGameState(gameId),
+    };
+  }
+
+  /**
+   * Resolve trick after cards have been visible for delay
+   */
+  resolveTrickDelayed(gameId) {
+    const game = this.games.get(gameId);
+    if (!game) throw new Error(`Game ${gameId} not found`);
+
+    const state = game.engine.getState();
+    if (state.table.length !== 2) {
+      return { status: 'no_trick', message: 'No complete trick to resolve' };
+    }
+
+    // Save cards info before resolving the trick
+    const tableEntry1 = state.table[0];
+    const tableEntry2 = state.table[1];
+    const card1 = tableEntry1.card;
+    const card2 = tableEntry2.card;
+    const card1Player = tableEntry1.owner === 'player1' ? game.player1 : game.player2;
+    const card2Player = tableEntry2.owner === 'player1' ? game.player1 : game.player2;
+    
+    // Resolve trick
+    const trickWinner = game.engine.resolveTrick();
+    const winnerKey = trickWinner === "player1" ? "player1" : "player2";
+    const winnerPlayer = game[winnerKey];
+
+    game.history.push({
+      timestamp: Date.now(),
+      player: winnerKey,
+      action: "won_trick",
+    });
+
+    // Get the updated state to get points
+    const updatedState = game.engine.getState();
+    const lastTrick = updatedState[`${winnerKey}Tricks`][updatedState[`${winnerKey}Tricks`].length - 1];
+    const pointsWon = lastTrick ? lastTrick.points : 0;
+
+    // Store trick data to save later when game ends
+    const trickNumber = updatedState.player1Tricks.length + updatedState.player2Tricks.length;
+    game.tricksToSave.push({
+      trick_number: trickNumber,
+      card1_id: card1.id,
+      card1_suit: card1.suit,
+      card1_rank: card1.rank,
+      card1_value: this.getCardValue(card1),
+      card1_player_id: card1Player.userId,
+      card2_id: card2.id,
+      card2_suit: card2.suit,
+      card2_rank: card2.rank,
+      card2_value: this.getCardValue(card2),
+      card2_player_id: card2Player.userId,
+      winner_user_id: winnerPlayer.userId,
+      points_won: pointsWon,
+      trump_suit: updatedState.trumpSuit,
+    });
+
+    // Se jogo acabou
+    if (updatedState.phase === "end") {
+      return this.finishGame(gameId);
+    }
+
+    // Próximo player é o que venceu o trick
+    game.currentPlayer = winnerKey;
+    game.turnStartTime = Date.now(); // Reset timer
+
+    return {
+      status: "success",
       gameState: this.getGameState(gameId),
     };
   }
