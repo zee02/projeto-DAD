@@ -13,8 +13,8 @@ const authStore = useAuthStore()
 const apiStore = useAPIStore()
 
 // Game state
-const gameId = ref(route.params.gameId)
-const matchId = ref(route.query.matchId)
+const gameId = ref(route.params.gameId || null)
+const matchId = ref(route.query.matchId || null)
 const gameState = ref(null)
 const match = ref(null)
 const opponentUserId = ref(null)
@@ -246,6 +246,8 @@ const getCardBackImagePath = () => '/cards/semFace.png'
 // Play card
 const playCard = (card) => {
   if (!isMyTurn.value) return
+  // Prevent playing cards while waiting for trick to resolve
+  if (showTrickResolving.value) return
 
   socketStore.socket.emit('game:play_card', {
     gameId: gameId.value,
@@ -306,19 +308,17 @@ const goHomeAfterDisconnect = () => {
 const handleGameEndedOk = () => {
   showGameEndedModal.value = false
   gameEndedResult.value = null
-  
-  // Check if this was the last game in the match
-  // If match is finished, the match:finished modal will show
-  // Otherwise, wait for next game to start
+  // Redirect to home
+  router.push('/home')
 }
 
-// Restart multiplayer game (return to lobby)
+// Restart multiplayer game (return to home)
 const restartMultiplayer = () => {
   showGameEndedModal.value = false
   showEndModal.value = false
   gameEndedResult.value = null
-  // Redirect to lobby for a new match
-  router.push('/multiplayer/lobby')
+  // Redirect to home
+  router.push('/home')
 }
 
 // Remove notification by id
@@ -355,37 +355,43 @@ const saveMatchToDatabase = async (payload) => {
       player1_user_id: payload.match.player1.userId,
       player2_user_id: payload.match.player2.userId,
       winner_user_id: payload.match.winner === 'player1' ? payload.match.player1.userId : payload.match.player2.userId,
-      game_type: gameType.value,
-      bet_per_game: betAmount.value,
-      max_wins: payload.match.maxWins,
-      player1_wins: payload.match.player1.wins,
-      player2_wins: payload.match.player2.wins,
-      player1_coins_bet: payload.match.player1.coinsBet,
-      player2_coins_bet: payload.match.player2.coinsBet,
-      player1_coins_won: payload.match.player1.coinsWon,
-      player2_coins_won: payload.match.player2.coinsWon,
+      game_type: String(gameType.value || payload.match.gameType || '3'),
+      bet_per_game: Number(betAmount.value || payload.match.betPerGame || 0),
+      max_wins: Number(payload.match.maxWins),
+      player1_wins: Number(payload.match.player1.wins),
+      player2_wins: Number(payload.match.player2.wins),
+      player1_coins_bet: Number(payload.match.player1.coinsBet || 0),
+      player2_coins_bet: Number(payload.match.player2.coinsBet || 0),
+      player1_coins_won: Number(payload.match.player1.coinsWon || 0),
+      player2_coins_won: Number(payload.match.player2.coinsWon || 0),
       games_data: payload.match.games,
     }
     
+    console.log('Saving match data:', matchData)
     await apiStore.postSaveMatch(matchData)
     console.log('Match saved to database')
   } catch (error) {
     console.error('Failed to save match:', error)
+    console.error('Error details:', error.response?.data)
   }
 }
 
 // Set up socket listeners
 onMounted(() => {
-  console.log('[MultiplayerGame] Mounted, gameId:', gameId.value)
+  console.log('[MultiplayerGame] Mounted')
+  console.log('[MultiplayerGame] Route params:', route.params)
+  console.log('[MultiplayerGame] Route query:', route.query)
+  console.log('[MultiplayerGame] Route state:', history.state)
+  console.log('[MultiplayerGame] gameId:', gameId.value)
   console.log('[MultiplayerGame] Socket connected:', socketStore.isConnected)
-  console.log('[MultiplayerGame] Last game:start payload:', socketStore.lastGameStartPayload?.value)
+  console.log('[MultiplayerGame] Last game:start payload:', socketStore.lastGameStartPayload)
   
   gameStartTime = Date.now()
 
-  // Check if game:start payload already received (race condition handling)
-  if (socketStore.lastGameStartPayload?.value) {
-    console.log('[MultiplayerGame] Using stored game:start payload:', socketStore.lastGameStartPayload.value)
-    const payload = socketStore.lastGameStartPayload.value
+  // Priority 1: Check router state (most reliable for navigation)
+  if (history.state && history.state.gameStartPayload) {
+    console.log('[MultiplayerGame] Using router state payload:', history.state.gameStartPayload)
+    const payload = history.state.gameStartPayload
     gameId.value = payload.gameId
     matchId.value = payload.matchId
     gameState.value = payload.gameState
@@ -394,7 +400,26 @@ onMounted(() => {
     gameType.value = payload.gameType
     gameStartTime = Date.now()
     deductCoinsAtGameStart()
-    socketStore.lastGameStartPayload.value = null // Clear after using
+  }
+  // Priority 2: Check if game:start payload already received (race condition handling)
+  else if (socketStore.lastGameStartPayload) {
+    console.log('[MultiplayerGame] Using stored game:start payload:', socketStore.lastGameStartPayload)
+    const payload = socketStore.lastGameStartPayload
+    gameId.value = payload.gameId
+    matchId.value = payload.matchId
+    gameState.value = payload.gameState
+    opponentUserId.value = payload.opponentUserId
+    betAmount.value = payload.betAmount
+    gameType.value = payload.gameType
+    gameStartTime = Date.now()
+    deductCoinsAtGameStart()
+    socketStore.clearGameStartPayload() // Clear after using
+  }
+  
+  // If gameId is in route params but no payload, use that
+  if (!gameId.value && route.params.gameId) {
+    gameId.value = route.params.gameId
+    matchId.value = route.query.matchId
   }
 
   // Se não temos gameState ainda, pedir ao servidor o estado atual
@@ -413,9 +438,7 @@ onMounted(() => {
     gameType.value = payload.gameType
     gameStartTime = Date.now()
     deductCoinsAtGameStart()
-    if (socketStore.lastGameStartPayload) {
-      socketStore.lastGameStartPayload.value = null // Clear after using
-    }
+    socketStore.clearGameStartPayload() // Clear after using
   }
   socketStore.socket.on('game:start', socketHandlers.onGameStart)
 
@@ -473,8 +496,7 @@ onMounted(() => {
       scores: payload.scores,
       player1: payload.match.player1,
       player2: payload.match.player2,
-      isWinner: isWinner,
-      gameSaved: true
+      isWinner: isWinner
     }
     
     // Show the game ended modal (not the round finished modal)
@@ -652,8 +674,7 @@ onMounted(() => {
       scores: payload.scores,
       player1: payload.player1,
       player2: payload.player2,
-      isWinner: isWinner,
-      gameSaved: payload.gameSaved
+      isWinner: isWinner
     }
     
     // Show the single-player-style modal
@@ -673,9 +694,9 @@ onMounted(() => {
 
   // Timeout para esperar gameState
   setTimeout(() => {
-    if (!gameState.value && socketStore.lastGameStartPayload?.value) {
+    if (!gameState.value && socketStore.lastGameStartPayload) {
       // usar payload guardado se por alguma razão não foi aplicado
-      const payload = socketStore.lastGameStartPayload.value
+      const payload = socketStore.lastGameStartPayload
       gameId.value = payload.gameId
       matchId.value = payload.matchId
       gameState.value = payload.gameState
@@ -684,7 +705,7 @@ onMounted(() => {
       gameType.value = payload.gameType
       gameStartTime = Date.now()
       deductCoinsAtGameStart()
-      socketStore.lastGameStartPayload.value = null
+      socketStore.clearGameStartPayload()
     }
 
     if (!gameState.value) {
@@ -693,7 +714,7 @@ onMounted(() => {
         socketStore.socket.emit('game:request_state', { gameId: gameId.value })
       }
       console.error('[MultiplayerGame] Timeout waiting for gameState')
-      console.error('[MultiplayerGame] lastGameStartPayload:', socketStore.lastGameStartPayload?.value)
+      console.error('[MultiplayerGame] lastGameStartPayload:', socketStore.lastGameStartPayload)
       console.error('[MultiplayerGame] gameId:', gameId.value)
       console.error('[MultiplayerGame] socket connected:', socketStore.isConnected)
       errorMessage.value = 'Failed to load game. Please refresh.'
@@ -857,11 +878,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Resolving Message -->
-      <div v-if="showTrickResolving" class="mt-2 text-center text-base font-medium text-indigo-700 animate-pulse">
-        {{ gameMessage || 'Resolving trick...' }}
-      </div>
-
       <!-- Mesa (cartas jogadas) -->
       <div
         class="flex items-center justify-between py-6 px-6 border rounded-xl bg-slate-50"
@@ -947,10 +963,6 @@ onBeforeUnmount(() => {
       <!-- Messages -->
       <div v-if="errorMessage" class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
         {{ errorMessage }}
-      </div>
-
-      <div v-if="gameMessage" class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-        {{ gameMessage }}
       </div>
 
       <!-- Mão do Jogador -->
@@ -1046,9 +1058,6 @@ onBeforeUnmount(() => {
         <p class="text-xl text-gray-600">
           {{ endSummary.text }}
         </p>
-        <div v-if="gameEndedResult?.gameSaved" class="text-sm text-green-600">
-          ✓ Game saved to database
-        </div>
         <div class="flex flex-col gap-3">
           <button 
             class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"

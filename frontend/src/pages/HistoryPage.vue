@@ -18,6 +18,7 @@
             <option value="Pending">Pending</option>
             <option value="Playing">Playing</option>
             <option value="Ended">Ended</option>
+            <option value="Surrendered">Surrendered</option>
             <option value="Interrupted">Interrupted</option>
           </select>
 

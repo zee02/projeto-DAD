@@ -9,7 +9,8 @@ class GameController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->only(['store', 'show']);
+        // Allow game saves from the websocket service (no Sanctum token), still protect game details
+        $this->middleware('auth:sanctum')->only(['show']);
     }
 
     /**
@@ -23,7 +24,7 @@ class GameController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->has('status') && in_array($request->status, ['Pending', 'Playing', 'Ended', 'Interrupted'])) {
+        if ($request->has('status') && in_array($request->status, ['Pending', 'Playing', 'Ended', 'Interrupted', 'Surrendered'])) {
             $query->where('status', $request->status);
         }
 
@@ -75,7 +76,7 @@ class GameController extends Controller
             $query->where('type', $request->type);
         }
 
-        if ($request->has('status') && in_array($request->status, ['Pending', 'Playing', 'Ended', 'Interrupted'])) {
+        if ($request->has('status') && in_array($request->status, ['Pending', 'Playing', 'Ended', 'Interrupted', 'Surrendered'])) {
             $query->where('status', $request->status);
         }
 
@@ -122,8 +123,9 @@ class GameController extends Controller
             'is_draw' => 'boolean',
             'winner_user_id' => 'nullable|exists:users,id',
             'loser_user_id' => 'nullable|exists:users,id',
+            'surrendered_by' => 'nullable|exists:users,id',
             'match_id' => 'nullable|integer',
-            'status' => 'nullable|in:Pending,Playing,Ended,Interrupted',
+            'status' => 'nullable|in:Pending,Playing,Ended,Interrupted,Surrendered',
             'began_at' => 'required|date',
             'ended_at' => 'required|date',
             'total_time' => 'required|numeric',

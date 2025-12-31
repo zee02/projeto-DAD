@@ -134,17 +134,18 @@ onMounted(() => {
   // Listening for game start
     socketStore.socket.on('game:start', (payload) => {
     console.log('Game started:', payload)
-    // Store the game state in socket store before routing (guarded)
-    if (socketStore.lastGameStartPayload) {
-      socketStore.lastGameStartPayload.value = payload
-    }
+    // Store the game state in socket store before routing
+    socketStore.setGameStartPayload(payload)
     leftLobby.value = true
     waitingForOpponent.value = false
     lobbyId.value = payload.gameId || lobbyId.value
+    
+    // Use router state to pass payload (more reliable than store for race conditions)
     router.push({
       name: 'multiplayer-game',
       params: { gameId: payload.gameId },
       query: { matchId: payload.matchId },
+      state: { gameStartPayload: payload }
     })
   })
 

@@ -15,6 +15,7 @@ class Game extends Model
         'is_draw',
         'winner_user_id',
         'loser_user_id',
+        'surrendered_by',
         'match_id',
         'status',
         'began_at',

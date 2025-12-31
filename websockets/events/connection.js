@@ -291,6 +291,10 @@ export const handleConnectionEvents = (io, socket) => {
 
       if (result.status === 'surrendered') {
         const game = gameManager.getGame(gameId);
+        
+        // Mark the game as surrendered
+        game.surrenderedBy = userId;
+        
         const match = bettingManager.getMatchForGame(gameId);
 
         // Registrar resultado na partida
@@ -480,15 +484,21 @@ async function saveGameToDatabase(game) {
     }
   }
   
+   console.log(`[saveGameToDatabase] Preparing to save game ${game.id}`);
+   console.log(`[saveGameToDatabase] Game type: ${game.gameType}, Match ID: ${game.matchId || 'None'}, Surrendered by: ${game.surrenderedBy || 'N/A'}`);
+   console.log(`[saveGameToDatabase] Scores - P1: ${game.player1.score}, P2: ${game.player2.score}, Winner: ${winnerUserId}, Loser: ${loserUserId}`);
+ 
   const gameData = {
     type: game.gameType,
-    player1_user_id: game.player1.userId,
-    player2_user_id: game.player2.userId,
+    // Cast to integers to satisfy API validation
+    player1_user_id: Number(game.player1.userId),
+    player2_user_id: Number(game.player2.userId),
     is_draw: isDraw,
-    winner_user_id: winnerUserId,
-    loser_user_id: loserUserId,
-    match_id: game.matchId || null,
-    status: 'Ended',
+    winner_user_id: winnerUserId != null ? Number(winnerUserId) : null,
+    loser_user_id: loserUserId != null ? Number(loserUserId) : null,
+    surrendered_by: game.surrenderedBy ? Number(game.surrenderedBy) : null,
+    match_id: game.matchId != null ? Number(game.matchId) : null,
+    status: game.surrenderedBy ? 'Surrendered' : 'Ended',
     began_at: new Date(game.startedAt).toISOString(),
     ended_at: new Date(game.endedAt).toISOString(),
     total_time: (game.endedAt - game.startedAt) / 1000, // in seconds
@@ -497,6 +507,9 @@ async function saveGameToDatabase(game) {
   };
 
   try {
+     console.log(`[saveGameToDatabase] Sending POST to ${API_BASE_URL}/games`);
+     console.log(`[saveGameToDatabase] Game data:`, JSON.stringify(gameData, null, 2));
+   
     const response = await fetch(`${API_BASE_URL}/games`, {
       method: 'POST',
       headers: {
@@ -509,20 +522,25 @@ async function saveGameToDatabase(game) {
     if (!response.ok) {
       const error = await response.json();
       console.error('Failed to save game to database:', error);
+      console.error('Game data:', gameData);
+       console.error(`[saveGameToDatabase] HTTP Status: ${response.status} ${response.statusText}`);
       return { success: false, error };
     }
 
     const result = await response.json();
-    console.log('Game saved to database:', result);
+     console.log(`[saveGameToDatabase] ✓ Game saved successfully! DB ID: ${result.data?.id}`);
+     console.log(`[saveGameToDatabase] Status: ${gameData.status} | Match ID: ${gameData.match_id || 'None'} | Surrendered by: ${gameData.surrendered_by || 'N/A'}`);
     
     // Store the database game ID in the game object
     if (result.data && result.data.id) {
       game.dbGameId = result.data.id;
+       console.log(`[saveGameToDatabase] Set game.dbGameId = ${game.dbGameId}`);
     }
     
     return { success: true, data: result };
   } catch (error) {
-    console.error('Error saving game to database:', error);
+     console.error(`[saveGameToDatabase] ✗ EXCEPTION while saving game ${game.id}:`, error.message);
+     console.error(`[saveGameToDatabase] Stack:`, error.stack);
     return { success: false, error: error.message };
   }
 }
@@ -533,6 +551,9 @@ async function saveGameToDatabase(game) {
 async function handleGameEnd(io, gameId) {
   const game = gameManager.getGame(gameId);
   if (!game) return;
+  
+  console.log(`[handleGameEnd] Starting end game process for game ${gameId}`);
+  console.log(`[handleGameEnd] Match ID: ${game.matchId || 'None'}, Game type: ${game.gameType}`);
 
   // Limpar timers e intervalos
   if (turnTimers.has(gameId)) {
@@ -545,18 +566,23 @@ async function handleGameEnd(io, gameId) {
   }
 
   // Save game to database
+ console.log(`[handleGameEnd] Calling saveGameToDatabase...`);
   const saveResult = await saveGameToDatabase(game);
+  console.log(`[handleGameEnd] Save result:`, saveResult.success ? '✓ SUCCESS' : '✗ FAILED', saveResult.error || '');
   
   // Save all tricks to database if game was saved successfully
   if (saveResult.success && game.dbGameId && game.tricksToSave && game.tricksToSave.length > 0) {
+   console.log(`[handleGameEnd] Saving ${game.tricksToSave.length} tricks to database`);
     await gameManager.saveTricksToDatabase(game.dbGameId, game.tricksToSave);
   }
 
   const match = bettingManager.getMatchForGame(gameId);
+  console.log(`[handleGameEnd] Match found: ${match ? 'YES (ID: ' + match.id + ')' : 'NO'}`);
   
   // Only emit game:ended if there's NO match (standalone game)
   // If there's a match, match:game_result will handle the UI
   if (!match) {
+   console.log(`[handleGameEnd] Emitting game:ended event (standalone game)`);
     const winnerPlayer = game.winner === 'player1' ? game.player1 : game.player2;
     const isDraw = game.player1.score === game.player2.score;
     
@@ -577,6 +603,7 @@ async function handleGameEnd(io, gameId) {
   }
 
   if (match) {
+   console.log(`[handleGameEnd] Processing match result for match ${match.id}`);
     const winner = game.winner === 'player1' ? 'player1' : 'player2';
     const scores = {
       player1: game.player1.score,
@@ -589,8 +616,10 @@ async function handleGameEnd(io, gameId) {
       winner,
       scores
     );
+   console.log(`[handleGameEnd] Match status: ${matchResult.match.status}, Games completed: ${matchResult.match.games.length}`);
 
     // Notificar resultado do match
+   console.log(`[handleGameEnd] Emitting match:game_result`);
     io.to(`game_${gameId}`)
       .emit('match:game_result', {
         gameId,
@@ -601,6 +630,7 @@ async function handleGameEnd(io, gameId) {
 
     // Se match acabou
     if (matchResult.match.status === 'finished') {
+     console.log(`[handleGameEnd] Match finished! Winner: ${matchResult.match.winner}, Coins won: ${matchResult.winnerCoins}`);
       io.to(`game_${gameId}`)
         .emit('match:finished', {
           matchId: match.id,
@@ -612,6 +642,8 @@ async function handleGameEnd(io, gameId) {
     }
   }
 
+ console.log(`[handleGameEnd] Removing game from manager`);
   gameManager.removeGame(gameId);
   clearTimeout(turnTimers.get(gameId));
+ console.log(`[handleGameEnd] ✓ Game end process completed for game ${gameId}`);
 }

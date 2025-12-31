@@ -49,11 +49,23 @@ export const useSocketStore = defineStore('socket', () => {
     }
   }
 
+  const setGameStartPayload = (payload) => {
+    console.log('[Socket Store] Setting lastGameStartPayload:', payload)
+    lastGameStartPayload.value = payload
+  }
+
+  const clearGameStartPayload = () => {
+    console.log('[Socket Store] Clearing lastGameStartPayload')
+    lastGameStartPayload.value = null
+  }
+
   return {
     socket,
     isConnected,
     lastGameStartPayload,
     connect,
     disconnect,
+    setGameStartPayload,
+    clearGameStartPayload,
   }
 })

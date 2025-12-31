@@ -17,7 +17,7 @@ class MatchController extends Controller
             'player2_user_id' => 'required|exists:users,id',
             'winner_user_id' => 'required|exists:users,id',
             'game_type' => 'required|in:3,9',
-            'bet_per_game' => 'required|integer|min:1',
+            'bet_per_game' => 'required|integer|min:0',
             'max_wins' => 'required|integer|min:1',
             'player1_wins' => 'required|integer|min:0',
             'player2_wins' => 'required|integer|min:0',
@@ -28,10 +28,9 @@ class MatchController extends Controller
             'games_data' => 'nullable|array',
         ]);
 
-        $match = BiscaMatch::create([
-            ...$validated,
+        $match = BiscaMatch::create(array_merge($validated, [
             'status' => 'finished',
-        ]);
+        ]));
 
         // TODO: Atualizar coins dos players (debit/credit)
 
@@ -126,20 +125,5 @@ class MatchController extends Controller
         ];
 
         return response()->json($stats);
-    }
-}
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, BiscaMatch $biscaMatch)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(BiscaMatch $biscaMatch)
-    {
-        //
     }
 }

@@ -80,6 +80,11 @@ export class BiscaGameEngine {
     this.table.push({ card, owner: 'player1' });
     this.player1Hand.splice(cardIndex, 1);
 
+    // Draw a new card immediately if deck has cards and hand is below 3
+    if (this.deck.length > 0 && this.player1Hand.length < 3) {
+      this.player1Hand.push(this.deck.pop());
+    }
+
     return { success: true, card };
   }
 
@@ -101,6 +106,11 @@ export class BiscaGameEngine {
     const card = this.player2Hand[cardIndex];
     this.table.push({ card, owner: 'player2' });
     this.player2Hand.splice(cardIndex, 1);
+
+    // Draw a new card immediately if deck has cards and hand is below 3
+    if (this.deck.length > 0 && this.player2Hand.length < 3) {
+      this.player2Hand.push(this.deck.pop());
+    }
 
     return { success: true, card };
   }
@@ -143,15 +153,12 @@ export class BiscaGameEngine {
 
     this.table = [];
 
-    // Check if game should end BEFORE drawing new cards
-    // Game ends when deck is empty AND both hands will be empty after this trick
+    // Check if game should end
+    // Game ends when deck is empty AND both hands are empty
     const shouldEndGame = this.deck.length === 0 && this.player1Hand.length === 0 && this.player2Hand.length === 0;
 
     if (shouldEndGame) {
       this.finishGame();
-    } else {
-      // Distribuir novas cartas apenas se o jogo não acabou
-      this.drawCards();
     }
 
     // O vencedor do trick joga primeiro no próximo
