@@ -54,11 +54,11 @@
                     </button>
                     
                     <!-- Dropdown Menu -->
-                    <div v-if="showDropdown" class="absolute right-0 mt-2 w-48 bg-card text-card-foreground border border-border rounded-lg shadow-lg z-50">
-                        <RouterLink to="/profile" @click="closeDropdown" class="block px-4 py-2 text-card-foreground hover:bg-muted/50 border-b border-border">
+                    <div v-if="showDropdown" class="absolute right-0 mt-2 w-48 bg-white text-foreground border border-border rounded-lg shadow-lg z-50">
+                        <RouterLink to="/profile" @click="closeDropdown" class="block px-4 py-2 text-foreground hover:bg-gray-100 border-b border-border">
                             Profile
                         </RouterLink>
-                        <button @click="handleLogout" class="w-full text-left px-4 py-2 text-destructive hover:bg-destructive/10 font-semibold">
+                        <button @click="handleLogout" class="w-full text-left px-4 py-2 text-destructive hover:bg-gray-100 font-semibold">
                             Logout
                         </button>
                     </div>
