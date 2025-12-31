@@ -626,7 +626,7 @@ async function handleGameEnd(io, gameId) {
       });
   }
 
-  if (match) {
+  if (match && !game.matchResultRecorded) {
    console.log(`[handleGameEnd] Processing match result for match ${match.id}`);
     const winner = game.winner === 'player1' ? 'player1' : 'player2';
     const scores = {
@@ -640,9 +640,12 @@ async function handleGameEnd(io, gameId) {
       winner,
       scores
     );
+    
+    // Mark that match result has been recorded to prevent duplicate calls
+    game.matchResultRecorded = true;
    console.log(`[handleGameEnd] Match status: ${matchResult.match.status}, Games completed: ${matchResult.match.games.length}`);
 
-    // Notificar resultado do match
+    // Notificar resultado do match (only emit once)
    console.log(`[handleGameEnd] Emitting match:game_result`);
     io.to(`game_${gameId}`)
       .emit('match:game_result', {
@@ -652,7 +655,7 @@ async function handleGameEnd(io, gameId) {
         match: matchResult.match,
       });
 
-    // Se match acabou
+    // Se match acabou (only emit once)
     if (matchResult.match.status === 'finished') {
      console.log(`[handleGameEnd] Match finished! Winner: ${matchResult.match.winner}, Coins won: ${matchResult.winnerCoins}`);
       io.to(`game_${gameId}`)

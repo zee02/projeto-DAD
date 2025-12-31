@@ -20,6 +20,7 @@ const customStakeError = ref('')
 const betOptions = [3] // Preset: 3 coins (minimum stake)
 const leftLobby = ref(false)
 const coinsRefunded = ref(false) // Track if coins were already refunded
+const coinsDebited = ref(false) // Track if coins were debited in lobby
 const userCanceledSearch = ref(false) // Track if user clicked cancel
 
 // UI state
@@ -76,10 +77,7 @@ const joinLobby = async () => {
   try {
     // Reset refund flag for new lobby session
     coinsRefunded.value = false
-    
-    // Immediately deduct coins from player's balance (optimistic update)
-    const newCoins = Math.max(0, currentCoins - betAmount)
-    authStore.setUser({ ...user.value, coins_balance: newCoins })
+    coinsDebited.value = false
 
     socketStore.socket.emit('lobby:join', {
       userId: user.value.id,
@@ -106,8 +104,8 @@ const cancelWaiting = () => {
   userCanceledSearch.value = true
   socketStore.socket.emit('lobby:leave', { userCanceled: true })
   
-  // Refund coins since game hasn't started (only once)
-  if (!coinsRefunded.value) {
+  // Refund coins since game hasn't started (only once if debited)
+  if (coinsDebited.value && !coinsRefunded.value) {
     const currentCoins = Number(user.value?.coins_balance || 0)
     const refundCoins = Number(selectedBet.value || 0)
     const newCoins = currentCoins + refundCoins
@@ -152,8 +150,8 @@ onMounted(() => {
   // Listening for errors
   socketStore.socket.on('error', (payload) => {
     errorMessage.value = payload.message
-    if (waitingForOpponent.value && !coinsRefunded.value) {
-      // Refund coins on error (only once)
+    if (waitingForOpponent.value && coinsDebited.value && !coinsRefunded.value) {
+      // Refund coins on error only if debited
       const currentCoins = Number(user.value?.coins_balance || 0)
       const refundCoins = Number(selectedBet.value || 0)
       const newCoins = currentCoins + refundCoins
@@ -182,8 +180,8 @@ onMounted(() => {
     }
     waitingForOpponent.value = false
     
-    // Refund coins since game didn't start (only once)
-    if (!coinsRefunded.value) {
+    // Refund coins since game didn't start (only once, if debited)
+    if (coinsDebited.value && !coinsRefunded.value) {
       const currentCoins = Number(user.value?.coins_balance || 0)
       const refundCoins = Number(selectedBet.value || 0)
       const newCoins = currentCoins + refundCoins

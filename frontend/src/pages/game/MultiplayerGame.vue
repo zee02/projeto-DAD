@@ -399,7 +399,7 @@ onMounted(() => {
     betAmount.value = payload.betAmount
     gameType.value = payload.gameType
     gameStartTime = Date.now()
-    deductCoinsAtGameStart()
+    deductCoinsAtGameStart() // ONLY deduction point for router state
   }
   // Priority 2: Check if game:start payload already received (race condition handling)
   else if (socketStore.lastGameStartPayload) {
@@ -412,7 +412,7 @@ onMounted(() => {
     betAmount.value = payload.betAmount
     gameType.value = payload.gameType
     gameStartTime = Date.now()
-    deductCoinsAtGameStart()
+    deductCoinsAtGameStart() // ONLY deduction point for stored payload
     socketStore.clearGameStartPayload() // Clear after using
   }
   
@@ -430,14 +430,21 @@ onMounted(() => {
   // Listening for game start
   socketHandlers.onGameStart = (payload) => {
     console.log('[MultiplayerGame] Game started event received:', payload)
-    gameId.value = payload.gameId
-    matchId.value = payload.matchId
-    gameState.value = payload.gameState
-    opponentUserId.value = payload.opponentUserId
-    betAmount.value = payload.betAmount
-    gameType.value = payload.gameType
-    gameStartTime = Date.now()
-    deductCoinsAtGameStart()
+    // Only process if we haven't already initialized from router/stored state
+    if (!gameId.value) {
+      gameId.value = payload.gameId
+      matchId.value = payload.matchId
+      gameState.value = payload.gameState
+      opponentUserId.value = payload.opponentUserId
+      betAmount.value = payload.betAmount
+      gameType.value = payload.gameType
+      gameStartTime = Date.now()
+      deductCoinsAtGameStart() // Only deduct if not already deducted from router/stored state
+    } else {
+      // Already initialized, just update state in case it changed
+      console.log('[MultiplayerGame] Updating game state from event (coins already deducted)')
+      gameState.value = payload.gameState
+    }
     socketStore.clearGameStartPayload() // Clear after using
   }
   socketStore.socket.on('game:start', socketHandlers.onGameStart)
@@ -704,7 +711,7 @@ onMounted(() => {
       betAmount.value = payload.betAmount
       gameType.value = payload.gameType
       gameStartTime = Date.now()
-      deductCoinsAtGameStart()
+      // DO NOT deduct coins here - already deducted in onMounted or socket listener
       socketStore.clearGameStartPayload()
     }
 
