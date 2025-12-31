@@ -122,6 +122,8 @@ class GameController extends Controller
             'is_draw' => 'boolean',
             'winner_user_id' => 'nullable|exists:users,id',
             'loser_user_id' => 'nullable|exists:users,id',
+            'match_id' => 'nullable|integer',
+            'status' => 'nullable|in:Pending,Playing,Ended,Interrupted',
             'began_at' => 'required|date',
             'ended_at' => 'required|date',
             'total_time' => 'required|numeric',
@@ -130,7 +132,10 @@ class GameController extends Controller
             'custom' => 'nullable|array',
         ]);
 
-        $validated['status'] = 'Ended';
+        // Set default status if not provided
+        if (!isset($validated['status'])) {
+            $validated['status'] = 'Ended';
+        }
 
         $game = Game::create($validated);
 

@@ -82,7 +82,8 @@ export const handleConnectionEvents = (io, socket) => {
           lobby.player1,
           lobby.player2,
           gameType,
-          betAmount
+          betAmount,
+          match.id // Pass matchId
         );
 
         bettingManager.linkGameToMatch(gameId, match.id);
@@ -221,11 +222,14 @@ export const handleConnectionEvents = (io, socket) => {
           // Wait 2 seconds so players can see both cards
           setTimeout(() => {
             // NOW resolve the trick after cards were visible
+            console.log(`[game:play_card] Resolving trick for game ${gameId} after delay`);
             const resolveResult = gameManager.resolveTrickDelayed(gameId);
+            console.log(`[game:play_card] Resolve result:`, resolveResult.status, 'Table length:', resolveResult.gameState?.table?.length);
             
             if (resolveResult.status === 'game_finished') {
               // Game ended after this trick
               const finalGameState = resolveResult.gameState;
+              console.log(`[game:play_card] Game finished! Emitting final state with table length:`, finalGameState.table.length);
               io.to(player1Socket)
                 .to(player2Socket)
                 .emit('game:state_update', finalGameState);
@@ -236,6 +240,7 @@ export const handleConnectionEvents = (io, socket) => {
             } else if (resolveResult.status === 'success') {
               // Get updated state after trick is resolved
               const updatedGameState = resolveResult.gameState;
+              console.log(`[game:play_card] Trick resolved successfully. Emitting state with table length:`, updatedGameState.table.length);
               
               // Send updated state after trick resolution
               io.to(player1Socket)
@@ -482,6 +487,8 @@ async function saveGameToDatabase(game) {
     is_draw: isDraw,
     winner_user_id: winnerUserId,
     loser_user_id: loserUserId,
+    match_id: game.matchId || null,
+    status: 'Ended',
     began_at: new Date(game.startedAt).toISOString(),
     ended_at: new Date(game.endedAt).toISOString(),
     total_time: (game.endedAt - game.startedAt) / 1000, // in seconds
@@ -545,26 +552,30 @@ async function handleGameEnd(io, gameId) {
     await gameManager.saveTricksToDatabase(game.dbGameId, game.tricksToSave);
   }
 
-  // Emit game:ended event with winner information for notification modal
-  const winnerPlayer = game.winner === 'player1' ? game.player1 : game.player2;
-  const isDraw = game.player1.score === game.player2.score;
-  
-  io.to(`game_${gameId}`)
-    .emit('game:ended', {
-      gameId,
-      winner: winnerPlayer,
-      isDraw,
-      scores: {
-        player1: game.player1.score,
-        player2: game.player2.score,
-      },
-      player1: game.player1,
-      player2: game.player2,
-      gameSaved: saveResult.success,
-      dbGameId: game.dbGameId,
-    });
-
   const match = bettingManager.getMatchForGame(gameId);
+  
+  // Only emit game:ended if there's NO match (standalone game)
+  // If there's a match, match:game_result will handle the UI
+  if (!match) {
+    const winnerPlayer = game.winner === 'player1' ? game.player1 : game.player2;
+    const isDraw = game.player1.score === game.player2.score;
+    
+    io.to(`game_${gameId}`)
+      .emit('game:ended', {
+        gameId,
+        winner: winnerPlayer,
+        isDraw,
+        scores: {
+          player1: game.player1.score,
+          player2: game.player2.score,
+        },
+        player1: game.player1,
+        player2: game.player2,
+        gameSaved: saveResult.success,
+        dbGameId: game.dbGameId,
+      });
+  }
+
   if (match) {
     const winner = game.winner === 'player1' ? 'player1' : 'player2';
     const scores = {

@@ -306,13 +306,16 @@ const goHomeAfterDisconnect = () => {
 const handleGameEndedOk = () => {
   showGameEndedModal.value = false
   gameEndedResult.value = null
-  // Redirect to lobby
-  router.push('/multiplayer/lobby')
+  
+  // Check if this was the last game in the match
+  // If match is finished, the match:finished modal will show
+  // Otherwise, wait for next game to start
 }
 
 // Restart multiplayer game (return to lobby)
 const restartMultiplayer = () => {
   showGameEndedModal.value = false
+  showEndModal.value = false
   gameEndedResult.value = null
   // Redirect to lobby for a new match
   router.push('/multiplayer/lobby')
@@ -419,6 +422,7 @@ onMounted(() => {
   // Listening for game state updates
   socketHandlers.onGameStateUpdate = (state) => {
     console.log('Game state updated:', state)
+    console.log('Table length:', state.table?.length, 'Table:', state.table)
     
     gameState.value = state
     previousTurnTimeRemaining.value = state.turnTimeRemaining
@@ -441,25 +445,44 @@ onMounted(() => {
   // Listening for game finished
   socketHandlers.onMatchGameResult = (payload) => {
     console.log('Game finished:', payload)
-    gameFinished.value = true
-    gameResult.value = {
-      winner: payload.winner.userId === user.value.id ? myOwner.value : oppOwner.value,
-      myScore: myOwner.value === 'player1' ? payload.scores.player1 : payload.scores.player2,
-      oppScore: myOwner.value === 'player1' ? payload.scores.player2 : payload.scores.player1,
-    }
     
-    // Show notification only if not suppressed (e.g., surrender already notified)
-    if (!suppressRoundNotifs.value) {
-      const isWinner = payload.winner.userId === user.value.id
-      if (isWinner) {
-        addNotification('🎉 You won this round!', 'success', '🏆', 3000)
-      } else {
-        addNotification('❌ You lost this round', 'info', '😔', 3000)
+    const isWinner = payload.winner.userId === user.value.id
+    const isDraw = payload.scores.player1 === payload.scores.player2
+    
+    // Create end summary similar to game:ended
+    if (isDraw) {
+      endSummary.value = { 
+        text: `Draw. (${payload.scores.player1} vs ${payload.scores.player2})`, 
+        winner: null 
+      }
+    } else if (isWinner) {
+      endSummary.value = { 
+        text: `You win! (${payload.scores.player1} vs ${payload.scores.player2})`, 
+        winner: 'player' 
+      }
+    } else {
+      endSummary.value = { 
+        text: `You lose. (${payload.scores.player1} vs ${payload.scores.player2})`, 
+        winner: 'opponent' 
       }
     }
     
+    gameEndedResult.value = {
+      winner: payload.winner,
+      isDraw: isDraw,
+      scores: payload.scores,
+      player1: payload.match.player1,
+      player2: payload.match.player2,
+      isWinner: isWinner,
+      gameSaved: true
+    }
+    
+    // Show the game ended modal (not the round finished modal)
+    showGameEndedModal.value = true
+    
     match.value = payload.match
-    gameMessage.value = `Game result: ${payload.winner.userId === user.value.id ? 'You won! 🎉' : 'You lost'}`
+    gameMessage.value = `Game result: ${isWinner ? 'You won! 🎉' : 'You lost'}`
+    
     // Deduct additional bet(s) for completed games beyond the first
     const gamesPlayed = Array.isArray(payload.match?.games) ? payload.match.games.length : 0
     const betPerGame = Number(payload.match?.betPerGame || betAmount.value || 0)

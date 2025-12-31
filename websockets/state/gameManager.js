@@ -14,7 +14,7 @@ export class GameManager {
   /**
    * Iniciar novo jogo
    */
-  startGame(gameId, player1, player2, gameType = "3", betAmount = 2) {
+  startGame(gameId, player1, player2, gameType = "3", betAmount = 2, matchId = null) {
     if (this.games.has(gameId)) {
       throw new Error(`Game ${gameId} already exists`);
     }
@@ -28,6 +28,7 @@ export class GameManager {
     const game = {
       id: gameId,
       dbGameId: null, // Will be set when game is saved to database
+      matchId: matchId, // Store matchId for database save
       player1: { ...player1, score: 0, marks: 0, tricks: [] },
       player2: { ...player2, score: 0, marks: 0, tricks: [] },
       gameType,
