@@ -512,6 +512,13 @@ onMounted(() => {
     match.value = payload.match
     gameMessage.value = `Game result: ${isWinner ? 'You won! 🎉' : 'You lost'}`
     
+    // Award coins to winner of this round (betAmount * 2)
+    if (isWinner && !isDraw) {
+      const betPerGame = Number(payload.match?.betPerGame || betAmount.value || 0)
+      const roundPayout = betPerGame * 2
+      awardCoinsToWinner(user.value.id, roundPayout)
+    }
+    
     // Deduct additional bet(s) for completed games beyond the first
     const gamesPlayed = Array.isArray(payload.match?.games) ? payload.match.games.length : 0
     const betPerGame = Number(payload.match?.betPerGame || betAmount.value || 0)
@@ -669,6 +676,12 @@ onMounted(() => {
       isWinner: isWinner
     }
     
+    // Award coins to winner (standalone game without match)
+    if (isWinner && !isDraw && payload.winner?.userId) {
+      const payout = Number(effectiveBetAmount.value || betAmount.value || 0) * 2
+      awardCoinsToWinner(payload.winner.userId, payout)
+    }
+    
     // Show the single-player-style modal
     showGameEndedModal.value = true
   }
@@ -801,12 +814,6 @@ onBeforeUnmount(() => {
       <div class="flex items-center justify-between mb-2">
         <div>
           <h1 class="text-2xl font-bold">{{ gameTitle }}</h1>
-          <p class="text-sm text-gray-600">
-            Trump suit:
-            <span v-if="gameState" class="font-semibold">
-              {{ suitSymbol(gameState.trumpCard?.suit) }}
-            </span>
-          </p>
         </div>
         <div class="flex gap-2">
           <button
@@ -984,7 +991,8 @@ onBeforeUnmount(() => {
     <!-- Timeout Modal -->
     <div
       v-if="showTimeoutModal && timeoutResult"
-      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+      @click.self.prevent
     >
       <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
         <h2 class="text-3xl font-bold text-gray-900">⏰ Time Expired!</h2>
@@ -999,7 +1007,7 @@ onBeforeUnmount(() => {
           @click="goBackFromTimeout"
           class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800"
         >
-          Okay
+          OK
         </button>
       </div>
     </div>
@@ -1007,7 +1015,8 @@ onBeforeUnmount(() => {
     <!-- Round Finished Modal -->
     <div
       v-if="gameFinished && gameResult && !matchFinished"
-      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+      @click.self.prevent
     >
       <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
         <h2 class="text-3xl font-bold text-gray-900">Round Finished! 🎯</h2>
@@ -1022,20 +1031,11 @@ onBeforeUnmount(() => {
           <p>Opponent's score: <span class="font-bold">{{ gameResult.oppScore }}</span></p>
           <p>Your score: <span class="font-bold">{{ gameResult.myScore }}</span></p>
         </div>
-        <!-- Show different button based on whether opponent disconnected -->
         <button
-          v-if="gameResult.reason === 'Opponent disconnected'"
-          @click="goHomeAfterDisconnect"
-          class="w-full py-3 px-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-bold rounded-lg hover:from-green-700 hover:to-green-800"
-        >
-          🏠 Back to Home
-        </button>
-        <button
-          v-else
-          @click="continueToNextGame"
+          @click="goBack"
           class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800"
         >
-          Next Round
+          OK
         </button>
       </div>
     </div>
@@ -1044,33 +1044,27 @@ onBeforeUnmount(() => {
     <div
       v-if="showGameEndedModal && endSummary"
       class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+      @click.self.prevent
     >
       <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
         <h2 class="text-3xl font-bold text-gray-900">Game Over 🎮</h2>
         <p class="text-xl text-gray-600">
           {{ endSummary.text }}
         </p>
-        <div class="flex flex-col gap-3">
-          <button 
-            class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
-            @click="handleGameEndedOk"
-          >
-            OK
-          </button>
-          <button 
-            class="w-full py-2 px-4 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition" 
-            @click="restartMultiplayer"
-          >
-            Return to Lobby
-          </button>
-        </div>
+        <button 
+          class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
+          @click="handleGameEndedOk"
+        >
+          OK
+        </button>
       </div>
     </div>
 
     <!-- Game Finished Modal -->
     <div
       v-if="showEndModal && endSummary"
-      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+      class="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+      @click.self.prevent
     >
       <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl text-center space-y-6">
         <h2 class="text-3xl font-bold text-gray-900">Match Finished! 🏆</h2>
@@ -1082,9 +1076,9 @@ onBeforeUnmount(() => {
         </p>
         <button
           @click="goBack"
-          class="w-full py-3 px-4 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-bold rounded-lg hover:from-slate-700 hover:to-slate-800"
+          class="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-lg hover:from-blue-700 hover:to-blue-800"
         >
-          Back to Home
+          OK
         </button>
       </div>
     </div>

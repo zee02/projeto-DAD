@@ -140,8 +140,10 @@ export class BiscaGameEngine {
 
     const card1 = this.table[0].card;
     const card2 = this.table[1].card;
+    const owner1 = this.table[0].owner;
+    const owner2 = this.table[1].owner;
     const secondWins = this.doesSecondCardWin(card1, card2);
-    const winner = secondWins ? 'player2' : 'player1';
+    const winner = secondWins ? owner2 : owner1;
 
     // Contar pontos do trick
     const trickPoints = this.getCardValue(card1) + this.getCardValue(card2);
@@ -151,8 +153,8 @@ export class BiscaGameEngine {
     const card2IsTrump = card2.suit === this.trumpSuit;
     console.log(
       `[Trick Resolution] Trump: ${this.trumpSuit} | ` +
-      `Card1: ${card1.id} (trump: ${card1IsTrump}) | ` +
-      `Card2: ${card2.id} (trump: ${card2IsTrump}) | ` +
+      `Card1: ${card1.id} (trump: ${card1IsTrump}, owner: ${owner1}) | ` +
+      `Card2: ${card2.id} (trump: ${card2IsTrump}, owner: ${owner2}) | ` +
       `Winner: ${winner} (${secondWins ? 'secondWins' : 'firstWins'}) | ` +
       `Points: ${trickPoints}`
     );
