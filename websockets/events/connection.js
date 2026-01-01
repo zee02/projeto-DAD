@@ -543,11 +543,20 @@ async function saveGameToDatabase(game) {
       body: JSON.stringify(gameData),
     });
 
+    console.log(`[saveGameToDatabase] Response received: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      const error = await response.json();
-      console.error('Failed to save game to database:', error);
-      console.error('Game data:', gameData);
-       console.error(`[saveGameToDatabase] HTTP Status: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { message: errorText };
+      }
+      console.error('[saveGameToDatabase] ✗ FAILED TO SAVE GAME');
+      console.error('[saveGameToDatabase] HTTP Status:', response.status, response.statusText);
+      console.error('[saveGameToDatabase] Error response:', error);
+      console.error('[saveGameToDatabase] Game data sent:', JSON.stringify(gameData, null, 2));
       return { success: false, error };
     }
 
@@ -565,6 +574,7 @@ async function saveGameToDatabase(game) {
   } catch (error) {
      console.error(`[saveGameToDatabase] ✗ EXCEPTION while saving game ${game.id}:`, error.message);
      console.error(`[saveGameToDatabase] Stack:`, error.stack);
+     console.error(`[saveGameToDatabase] Game data that failed:`, JSON.stringify(gameData, null, 2));
     return { success: false, error: error.message };
   }
 }
@@ -574,10 +584,20 @@ async function saveGameToDatabase(game) {
  */
 async function handleGameEnd(io, gameId) {
   const game = gameManager.getGame(gameId);
-  if (!game) return;
+  if (!game) {
+    console.error(`[handleGameEnd] ERROR: Game ${gameId} not found!`);
+    return;
+  }
   
+  console.log(`[handleGameEnd] ========================================`);
   console.log(`[handleGameEnd] Starting end game process for game ${gameId}`);
   console.log(`[handleGameEnd] Match ID: ${game.matchId || 'None'}, Game type: ${game.gameType}`);
+  console.log(`[handleGameEnd] Player 1: ${game.player1.userId} (${game.player1.score} pts)`);
+  console.log(`[handleGameEnd] Player 2: ${game.player2.userId} (${game.player2.score} pts)`);
+  console.log(`[handleGameEnd] Winner: ${game.winner}`);
+  console.log(`[handleGameEnd] Started: ${new Date(game.startedAt).toISOString()}`);
+  console.log(`[handleGameEnd] Ended: ${game.endedAt ? new Date(game.endedAt).toISOString() : 'NOT SET'}`);
+  console.log(`[handleGameEnd] ========================================`);
 
   // Limpar timers e intervalos
   if (turnTimers.has(gameId)) {
@@ -592,7 +612,11 @@ async function handleGameEnd(io, gameId) {
   // Save game to database
  console.log(`[handleGameEnd] Calling saveGameToDatabase...`);
   const saveResult = await saveGameToDatabase(game);
-  console.log(`[handleGameEnd] Save result:`, saveResult.success ? '✓ SUCCESS' : '✗ FAILED', saveResult.error || '');
+  if (saveResult.success) {
+    console.log(`[handleGameEnd] ✓ Save result: SUCCESS (DB ID: ${game.dbGameId})`);
+  } else {
+    console.error(`[handleGameEnd] ✗ Save result: FAILED -`, saveResult.error);
+  }
   
   // Save all tricks to database if game was saved successfully
   if (saveResult.success && game.dbGameId && game.tricksToSave && game.tricksToSave.length > 0) {

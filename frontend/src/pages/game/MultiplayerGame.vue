@@ -287,35 +287,9 @@ const goBackFromTimeout = () => {
   }, 300)
 }
 
-// Continue to next game after round finishes
-const continueToNextGame = () => {
-  gameFinished.value = false
-  gameResult.value = null
-  // Game will continue automatically as the server sends next round game state
-}
-
-// Go home after opponent disconnects
-const goHomeAfterDisconnect = () => {
-  // Emit lobby leave to notify server
-  socketStore.socket.emit('lobby:leave', {})
-  // Redirect to home
-  setTimeout(() => {
-    router.push('/')
-  }, 300)
-}
-
 // Handle OK button click on game ended modal
 const handleGameEndedOk = () => {
   showGameEndedModal.value = false
-  gameEndedResult.value = null
-  // Redirect to home
-  router.push('/home')
-}
-
-// Restart multiplayer game (return to home)
-const restartMultiplayer = () => {
-  showGameEndedModal.value = false
-  showEndModal.value = false
   gameEndedResult.value = null
   // Redirect to home
   router.push('/home')
@@ -610,7 +584,7 @@ onMounted(() => {
     // Auto-redirect to home after 5 seconds if user doesn't click button
     setTimeout(() => {
       if (gameFinished.value && gameResult.value?.reason === 'Opponent disconnected') {
-        goHomeAfterDisconnect()
+        goBack()
       }
     }, 5000)
   }

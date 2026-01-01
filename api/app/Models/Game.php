@@ -60,26 +60,6 @@ class Game extends Model
         return $this->belongsTo(\App\Models\Match::class, 'match_id');
     }
 
-    public function gameState()
-    {
-        return $this->hasOne(GameState::class);
-    }
-
-    public function cards()
-    {
-        return $this->hasMany(GameCard::class);
-    }
-
-    public function rounds()
-    {
-        return $this->hasMany(GameRound::class);
-    }
-
-    public function stock()
-    {
-        return $this->hasMany(GameStock::class);
-    }
-
     public function transactions()
     {
         return $this->hasMany(CoinTransaction::class);
